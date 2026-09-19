@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>سرباز کوچولو - Little Soldier</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
+  html,body { width:100%; height:100%; margin:0; overflow:hidden; background:#000; touch-action:none;
+    font-family:'Press Start 2P', monospace; }
+  #game { position:absolute; top:0; left:0; width:100%; height:100%; image-rendering:pixelated; background:#5b9bd5; }
+
+  /* ---- HUD ---- */
+  #hud { position:absolute; top:8px; left:8px; right:8px; display:flex; justify-content:space-between;
+    pointer-events:none; z-index:20; color:#fff; font-size:10px; text-shadow:2px 2px 0 #000; }
+  #hpBarBg { width:110px; height:14px; background:#111; border:2px solid #fff; }
+  #hpBarFill { height:100%; background:#3ad63a; width:100%; }
+  #hudRight { text-align:left; direction:ltr; }
+  #hudCoins, #hudDiamonds { display:block; margin-top:3px; }
+
+  .overlay { position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(10,15,25,0.95);
+    display:none; flex-direction:column; align-items:center; justify-content:center; z-index:100;
+    color:#fff; text-align:center; padding:16px; overflow-y:auto; touch-action:pan-y; }
+  .overlay h1 { font-size:18px; color:#ffd23f; margin-bottom:14px; letter-spacing:1px; line-height:1.8; text-shadow:3px 3px 0 #000; }
+  .overlay p { font-size:10px; color:#9ff; line-height:2; max-width:280px; }
+  .pxBtn { font-family:'Press Start 2P', monospace; margin:8px; padding:12px 22px; font-size:11px; color:#fff;
+    background:#2ecc40; border:4px solid #145c1c; box-shadow:4px 4px 0 #0a2e0e; cursor:pointer; }
+  .pxBtn:active { transform:translate(3px,3px); box-shadow:1px 1px 0 #0a2e0e; }
+  .pxBtn.blue { background:#3a8ee6; border-color:#173c6b; box-shadow:4px 4px 0 #0d1f38; }
+  .pxBtn.blue:active { box-shadow:1px 1px 0 #0d1f38; }
+  .pxBtn.purple { background:#9b4fe0; border-color:#4a1f6e; box-shadow:4px 4px 0 #260f38; }
+  .pxBtn.purple:active { box-shadow:1px 1px 0 #260f38; }
+  .pxBtn.red { background:#e64b3a; border-color:#6b1a10; box-shadow:4px 4px 0 #380d09; }
+  .pxBtn.red:active { box-shadow:1px 1px 0 #380d09; }
+  .pxBtn.small { padding:8px 14px; font-size:9px; margin:5px; }
+  .pxBtn:disabled { opacity:0.4; }
+
+  #pxInput { font-family:'Press Start 2P', monospace; margin-top:14px; padding:10px; font-size:12px; text-align:center;
+    width:200px; background:#111; color:#fff; border:3px solid #5ad8ff; outline:none; }
+
+  /* Lobby */
+  #lobbyBg { background:#2c3e50; }
+  .lobbyStat { display:flex; gap:16px; margin-bottom:16px; font-size:11px; }
+  .lobbyStat span { color:#ffd23f; }
+
+  /* Shop */
+  #shopGrid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; width:100%; max-width:460px; margin-top:10px; }
+  .shopCard { background:rgba(255,255,255,0.08); border:3px solid #555; padding:8px; font-size:8px; line-height:1.8; }
+  .shopCard.owned { border-color:#2ecc40; }
+  .shopCard.active { border-color:#ffd23f; }
+  .shopIcon { font-size:22px; margin-bottom:4px; }
+
+  /* Multiplayer */
+  #mpCodeBox { font-size:28px; color:#5ad8ff; letter-spacing:6px; margin:16px 0; background:#111; padding:10px 18px; border:3px solid #5ad8ff; }
+  #mpWaitList { font-size:9px; color:#9ff; line-height:2.2; }
+
+  /* Level complete / game over */
+  #lcScore, #goScore { color:#ffd23f; font-size:14px; }
+  #lbList { text-align:right; font-size:9px; line-height:2.4; color:#ffd23f; list-style:decimal; padding-right:20px; margin-top:8px; }
+
+  /* Controls */
+  #controls { position:absolute; bottom:0; left:0; width:100%; height:180px; z-index:30; pointer-events:none; }
+  .ctrlBtn { position:absolute; pointer-events:auto; display:flex; align-items:center; justify-content:center;
+    font-family:'Press Start 2P', monospace; font-size:16px; color:#fff; border:3px solid rgba(255,255,255,0.5);
+    background:rgba(20,20,20,0.55); border-radius:10px; }
+  #btnLeft { left:14px; bottom:70px; width:56px; height:56px; }
+  #btnRight { left:78px; bottom:70px; width:56px; height:56px; }
+  #btnJump { right:96px; bottom:70px; width:64px; height:64px; border-radius:50%; background:rgba(58,142,230,0.5); }
+  #btnFire { right:16px; bottom:70px; width:72px; height:72px; border-radius:50%; background:rgba(230,75,58,0.55); font-size:11px; }
+  .ctrlBtn.pressed { background:rgba(255,255,255,0.35); }
+  #pauseBtn { position:absolute; top:8px; left:50%; transform:translateX(-50%); z-index:25; width:34px; height:34px;
+    background:rgba(0,0,0,0.5); border:2px solid #fff; color:#fff; display:flex; align-items:center; justify-content:center;
+    font-size:14px; pointer-events:auto; }
+</style>
+</head>
+<body>
+
+<canvas id="game"></canvas>
+
+<div id="hud" style="display:none;">
+  <div>
+    <div id="hpBarBg"><div id="hpBarFill"></div></div>
+    <div style="margin-top:4px;">LEVEL <span id="hudLevel">1</span></div>
+  </div>
+  <div id="hudRight">
+    <span id="hudScore">SCORE 0</span>
+    <span id="hudCoins">🪙 0</span>
+    <span id="hudDiamonds">💎 0</span>
+  </div>
+</div>
+<div id="pauseBtn" style="display:none;">⏸</div>
+
+<!-- Start menu -->
+<div class="overlay" id="menuOverlay" style="display:flex;">
+  <h1>🪖 سرباز کوچولو</h1>
+  <p>یه سرباز پیکسلی تو ماموریت‌های خطرناک — از چپ به راست پیش برو، دشمنارو بزن، به آخر مرحله برس!</p>
+  <button class="pxBtn" id="menuStartBtn">▶ شروع</button>
+</div>
+
+<!-- Lobby -->
+<div class="overlay" id="lobbyOverlay">
+  <h1>🏕 پایگاه</h1>
+  <div class="lobbyStat">
+    <div>🪙 <span id="lobbyCoins">0</span></div>
+    <div>💎 <span id="lobbyDiamonds">0</span></div>
+    <div>🏆 <span id="lobbyBest">0</span></div>
+  </div>
+  <button class="pxBtn" id="lobbyPlayBtn">▶ مرحله <span id="lobbyLevelNum">1</span></button>
+  <button class="pxBtn purple" id="lobbyShopBtn">🛒 فروشگاه</button>
+  <button class="pxBtn blue" id="lobbyMpBtn">🎮 چندنفره (PvP)</button>
+  <button class="pxBtn small" id="lobbyLbBtn">🏆 لیدربورد</button>
+  <button class="pxBtn small" id="lobbyNameBtn">✏️ اسم بازیکن</button>
+</div>
+
+<!-- Shop -->
+<div class="overlay" id="shopOverlay">
+  <h1>🛒 فروشگاه</h1>
+  <div class="lobbyStat"><div>🪙 <span id="shopCoins">0</span></div><div>💎 <span id="shopDiamonds">0</span></div></div>
+  <div id="shopGrid"></div>
+  <button class="pxBtn" id="shopBackBtn">بازگشت</button>
+</div>
+
+<!-- Multiplayer menu -->
+<div class="overlay" id="mpMenuOverlay">
+  <h1>🎮 چندنفره PvP</h1>
+  <p>میزبان یه اتاق باش یا با کد وارد اتاق دوستت شو. بازیکنا با هم می‌جنگن، آخرین نفر زنده یا بیشترین کشتار برنده‌ست.</p>
+  <button class="pxBtn blue" id="mpHost2Btn">👥 میزبانی ۲ نفره</button>
+  <button class="pxBtn blue" id="mpHost4Btn">👥 میزبانی ۴ نفره</button>
+  <button class="pxBtn purple" id="mpJoinBtn">🔑 ورود با کد</button>
+  <button class="pxBtn small" id="mpBackBtn">بازگشت</button>
+</div>
+
+<!-- Join code entry -->
+<div class="overlay" id="joinOverlay">
+  <h1>کد اتاق رو وارد کن</h1>
+  <input type="text" id="joinCodeInput" maxlength="5" style="font-family:'Press Start 2P',monospace;font-size:20px;text-align:center;width:160px;padding:10px;background:#111;color:#5ad8ff;border:3px solid #5ad8ff;letter-spacing:4px;">
+  <div><button class="pxBtn" id="joinConfirmBtn">اتصال</button></div>
+  <button class="pxBtn small" id="joinBackBtn">بازگشت</button>
+</div>
+
+<!-- Waiting room -->
+<div class="overlay" id="mpWaitOverlay">
+  <h1 id="mpWaitTitle">در انتظار بازیکنان</h1>
+  <div id="mpCodeBox">-----</div>
+  <div id="mpWaitList"></div>
+  <button class="pxBtn small" id="mpCancelBtn">لغو</button>
+</div>
+
+<!-- Level complete -->
+<div class="overlay" id="levelCompleteOverlay">
+  <h1>✅ مرحله تموم شد!</h1>
+  <p>امتیاز: <span id="lcScore">0</span></p>
+  <button class="pxBtn" id="lcContinueBtn">بازگشت به پایگاه</button>
+</div>
+
+<!-- Game over -->
+<div class="overlay" id="gameOverOverlay">
+  <h1 style="color:#ff3b3b;">☠ باختی</h1>
+  <p>امتیاز نهایی: <span id="goScore">0</span></p>
+  <button class="pxBtn" id="goContinueBtn">بازگشت به پایگاه</button>
+</div>
+
+<!-- Leaderboard -->
+<div class="overlay" id="lbOverlay">
+  <h1>🏆 برترین‌ها</h1>
+  <ol id="lbList"></ol>
+  <button class="pxBtn" id="lbBackBtn">بازگشت</button>
+</div>
+
+<!-- Pause -->
+<div class="overlay" id="pauseOverlay">
+  <h1>⏸ توقف</h1>
+  <button class="pxBtn" id="resumeBtn">ادامه بازی</button>
+  <button class="pxBtn red" id="quitBtn">ترک مرحله</button>
+</div>
+
+<!-- Username modal -->
+<div class="overlay" id="usernameModalOverlay">
+  <h1>اسم بازیکن</h1>
+  <p>این اسم توی لیدربورد نشون داده می‌شه:</p>
+  <input type="text" id="pxInput" maxlength="14" placeholder="Ali">
+  <div><button class="pxBtn" id="usernameConfirmBtn">تأیید</button></div>
+</div>
+
+<div id="controls" style="display:none;">
+  <div class="ctrlBtn" id="btnLeft">◀</div>
+  <div class="ctrlBtn" id="btnRight">▶</div>
+  <div class="ctrlBtn" id="btnJump">JUMP</div>
+  <div class="ctrlBtn" id="btnFire">FIRE</div>
+</div>
+
+<script>
+"use strict";
+/* =======================================================================
+   سرباز کوچولو — pixel side-scroller with campaign + shop + PvP hooks
+   ======================================================================= */
+
+// ---------- Config you must edit after deploying the worker ----------
+const API_BASE = "https://little-soldier.astyw79.workers.dev"; // <-- REPLACE with your real Worker URL
+const WS_BASE  = "wss://little-soldier.astyw79.workers.dev";   // <-- same host, wss:// scheme
+
+// ---------- Canvas ----------
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+let W = 0, H = 0;
+function resize(){ W = canvas.width = innerWidth; H = canvas.height = innerHeight; }
+resize();
+addEventListener('resize', resize);
+
+const GROUND_RATIO = 0.78; // ground line as a fraction of screen height
+function groundY(){ return H * GROUND_RATIO; }
+
+// ---------- Save data ----------
+const SAVE_KEY = 'littleSoldierSave_v1';
+function defaultSave(){
+  return {
+    coins:0, diamonds:0, bestScore:0, highestLevel:1,
+    unlockedWeapons:['pistol'], currentWeapon:'pistol',
+    unlockedSkins:['green'], currentSkin:'green',
+  };
+}
+function loadSave(){
+  let s=null; try{ s = JSON.parse(localStorage.getItem(SAVE_KEY)); }catch(e){}
+  const d = defaultSave();
+  if(!s || typeof s !== 'object') return d;
+  return Object.assign(d, s, {
+    unlockedWeapons: s.unlockedWeapons || d.unlockedWeapons,
+    unlockedSkins: s.unlockedSkins || d.unlockedSkins,
+  });
+}
+let SAVE = loadSave();
+function saveGame(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(SAVE)); }catch(e){} }
+
+// ---------- Username (custom modal, no window.prompt) ----------
+const USERNAME_KEY = 'littleSoldierUsername';
+function getUsername(){ return localStorage.getItem(USERNAME_KEY) || 'Soldier'; }
+function showUsernameModal(cur, onOk){
+  const overlay = document.getElementById('usernameModalOverlay');
+  const input = document.getElementById('pxInput');
+  input.value = cur || '';
+  overlay.style.display = 'flex';
+  const btn = document.getElementById('usernameConfirmBtn');
+  function submit(){
+    const v = input.value.trim().slice(0,14);
+    if(!v) return;
+    overlay.style.display = 'none';
+    btn.removeEventListener('click', submit);
+    input.removeEventListener('keydown', onKey);
+    onOk(v);
+  }
+  function onKey(ev){ if(ev.key==='Enter') submit(); }
+  btn.addEventListener('click', submit);
+  input.addEventListener('keydown', onKey);
+  setTimeout(()=>input.focus(), 50);
+}
+function ensureUsername(cb){
+  const ex = localStorage.getItem(USERNAME_KEY);
+  if(ex){ cb(ex); return; }
+  showUsernameModal('', v=>{ localStorage.setItem(USERNAME_KEY, v); cb(v); });
+}
+
+// ---------- Leaderboard (D1 via worker.js — score only) ----------
+async function submitScore(score){
+  if(score <= 0) return;
+  try{
+    await fetch(API_BASE + '/api/submit', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ username:getUsername(), score })
+    });
+  }catch(e){}
+}
+async function loadLeaderboard(){
+  const list = document.getElementById('lbList');
+  list.innerHTML = '<li>در حال بارگذاری...</li>';
+  try{
+    const res = await fetch(API_BASE + '/api/leaderboard');
+    const data = await res.json();
+    list.innerHTML = (data.leaderboard||[]).map(p=>`<li>${p.username} — ${p.best_score}</li>`).join('') || '<li>هنوز کسی امتیازی ثبت نکرده</li>';
+  }catch(e){ list.innerHTML = '<li>اتصال برقرار نشد</li>'; }
+}
+
+// ---------- Weapons & skins ----------
+const WEAPONS = {
+  pistol:  { name:'تپانچه', dmg:12, rate:380, price:0,  color:'#333' },
+  rifle:   { name:'تفنگ',  dmg:20, rate:220, price:80, color:'#3a5' },
+  smg:     { name:'مسلسل', dmg:9,  rate:110, price:130, color:'#458' },
+  shotgun: { name:'ساچمه‌ای', dmg:34, rate:650, price:160, color:'#a53' },
+};
+const SKINS = {
+  green: { name:'سبز ارتشی', body:'#3d6b35', dark:'#25401f', price:0 },
+  desert:{ name:'شنی', body:'#c9a25b', dark:'#8a6c34', price:60 },
+  urban: { name:'شهری', body:'#555b63', dark:'#2e3236', price:60 },
+  crimson:{name:'قرمز عملیاتی', body:'#8e2a2a', dark:'#551515', price:100 },
+};
+
+// ---------- Pixel soldier drawing ----------
+const PX = 3; // pixel block size
+// body layout, values are [x,y,w,h] in PX units relative to feet-center
+function drawSoldier(sx, sy, facing, walkFrame, bodyColor, darkColor, aiming){
+  ctx.save();
+  ctx.translate(sx, sy);
+  if(facing < 0) ctx.scale(-1,1);
+  const legOffset = walkFrame ? 2 : -2;
+  ctx.fillStyle = darkColor;
+  // legs
+  ctx.fillRect(-6*PX, -10*PX + legOffset*0, 5*PX, 10*PX);
+  ctx.fillRect(1*PX, -10*PX - legOffset*0, 5*PX, 10*PX);
+  ctx.fillRect(-6*PX, -10*PX + (walkFrame? 3*PX:0), 5*PX, 2*PX);
+  ctx.fillRect(1*PX, -10*PX + (walkFrame? 0:3*PX), 5*PX, 2*PX);
+  // torso
+  ctx.fillStyle = bodyColor;
+  ctx.fillRect(-7*PX, -20*PX, 14*PX, 11*PX);
+  // helmet + head
+  ctx.fillStyle = darkColor;
+  ctx.fillRect(-6*PX, -27*PX, 12*PX, 8*PX);
+  ctx.fillStyle = '#e0b48a';
+  ctx.fillRect(-4*PX, -21*PX, 8*PX, 3*PX);
+  // gun
+  ctx.fillStyle = '#161616';
+  const gunY = aiming ? -17*PX : -16*PX;
+  ctx.fillRect(6*PX, gunY, 11*PX, 3*PX);
+  ctx.fillRect(4*PX, -19*PX, 4*PX, 5*PX);
+  ctx.restore();
+}
+function drawCoinSprite(x,y){
+  ctx.fillStyle='#ffd23f'; ctx.beginPath(); ctx.arc(x,y,6,0,7); ctx.fill();
+  ctx.fillStyle='#b98a00'; ctx.beginPath(); ctx.arc(x,y,2.4,0,7); ctx.fill();
+}
+
+// ---------- Entities ----------
+let player, enemies, bullets, coinsOnGround, particles;
+let levelWidth=0, camX=0, score=0, gameLevel=1, levelEndX=0, levelState='menu';
+let running=false, paused=false;
+
+function newPlayer(){
+  return { x:80, y:0, vy:0, onGround:true, hp:100, maxHp:100, facing:1, walking:false, walkTimer:0,
+    fireTimer:0, alive:true, invuln:0 };
+}
+function resetLevelEntities(){
+  player = newPlayer();
+  enemies = []; bullets = []; coinsOnGround = []; particles = [];
+  camX = 0; score = 0;
+}
+
+function generateLevel(n){
+  levelWidth = 2200 + n*260;
+  const enemyCount = Math.min(4 + Math.floor(n*1.4), 18);
+  const spacing = (levelWidth - 500) / enemyCount;
+  for(let i=0;i<enemyCount;i++){
+    const x = 500 + i*spacing + Math.random()*spacing*0.4;
+    const type = Math.random() < Math.min(0.15+n*0.05,0.5) ? 'runner' : 'rifle';
+    enemies.push(makeEnemy(type, x, n));
+  }
+  const coinCount = 10 + n;
+  for(let i=0;i<coinCount;i++){
+    coinsOnGround.push({ x: 200 + Math.random()*(levelWidth-400), taken:false });
+  }
+  levelEndX = levelWidth - 80;
+}
+function makeEnemy(type, x, n){
+  const hpMul = 1 + (n-1)*0.18;
+  if(type==='runner') return { type, x, hp:22*hpMul, maxHp:22*hpMul, speed:1.6+Math.random()*0.4, alive:true, fireTimer:0, facing:-1, walkTimer:0 };
+  return { type, x, hp:32*hpMul, maxHp:32*hpMul, speed:0.5, alive:true, fireTimer:60+Math.random()*60, facing:-1, walkTimer:0 };
+}
+
+// ---------- Input ----------
+const keys = { left:false, right:false };
+let firing = false;
+function bindHold(id, onDown, onUp){
+  const el = document.getElementById(id);
+  el.addEventListener('touchstart', e=>{ e.preventDefault(); el.classList.add('pressed'); onDown(); }, {passive:false});
+  el.addEventListener('touchend', e=>{ e.preventDefault(); el.classList.remove('pressed'); onUp(); }, {passive:false});
+  el.addEventListener('mousedown', e=>{ e.preventDefault(); el.classList.add('pressed'); onDown(); });
+  el.addEventListener('mouseup', e=>{ el.classList.remove('pressed'); onUp(); });
+}
+bindHold('btnLeft', ()=>keys.left=true, ()=>keys.left=false);
+bindHold('btnRight', ()=>keys.right=true, ()=>keys.right=false);
+bindHold('btnJump', ()=>doJump(), ()=>{});
+bindHold('btnFire', ()=>firing=true, ()=>firing=false);
+function doJump(){ if(player && player.onGround && player.alive){ player.vy = -13; player.onGround=false; } }
+
+// ---------- Update ----------
+function updatePlayer(dt){
+  if(!player.alive) return;
+  const speed = 3.6;
+  let moveX = 0;
+  if(keys.left){ moveX = -1; player.facing=-1; }
+  if(keys.right){ moveX = 1; player.facing=1; }
+  player.walking = moveX !== 0;
+  player.x = Math.max(20, Math.min(levelWidth-20, player.x + moveX*speed));
+  player.vy += 0.65; // gravity
+  player.y += player.vy;
+  if(player.y >= 0){ player.y = 0; player.vy = 0; player.onGround = true; }
+  if(player.invuln > 0) player.invuln--;
+  if(player.walking) player.walkTimer += dt;
+
+  if(firing){
+    if(player.fireTimer<=0){
+      const w = WEAPONS[SAVE.currentWeapon];
+      bullets.push({ x:player.x + player.facing*30, y:-46, vx:player.facing*11, from:'player', dmg:w.dmg });
+      player.fireTimer = w.rate;
+    }
+  }
+  if(player.fireTimer>0) player.fireTimer -= dt*16.6;
+
+  // camera follow
+  const targetCam = Math.max(0, Math.min(levelWidth-W, player.x - W*0.4));
+  camX += (targetCam - camX) * 0.15;
+
+  // reached end
+  if(player.x >= levelEndX && levelState==='level'){
+    completeLevel();
+  }
+  // coins
+  coinsOnGround.forEach(c=>{
+    if(!c.taken && Math.abs(c.x-player.x)<26){ c.taken=true; SAVE.coins+=1; score+=5; updateHud(); }
+  });
+}
+function updateEnemies(dt){
+  enemies.forEach(e=>{
+    if(!e.alive) return;
+    const dist = player.x - e.x;
+    e.facing = dist<0 ? -1 : 1;
+    if(e.type==='runner'){
+      if(Math.abs(dist)>28) e.x += Math.sign(dist)*e.speed*dt*0.9;
+      else if(player.alive && player.invuln<=0){ player.hp -= 0.6; updateHud(); if(player.hp<=0) killPlayer(); }
+      e.walkTimer += dt;
+    } else {
+      if(Math.abs(dist)>320) e.x += Math.sign(dist)*e.speed*dt*0.6;
+      e.fireTimer -= dt*16.6;
+      if(e.fireTimer<=0 && Math.abs(dist)<420){
+        bullets.push({ x:e.x + e.facing*20, y:-46, vx:e.facing*7, from:'enemy', dmg:9 });
+        e.fireTimer = 90+Math.random()*40;
+      }
+    }
+  });
+  enemies = enemies.filter(e=> e.alive || e.deathTimer===undefined ? e.alive : false);
+}
+function updateBullets(dt){
+  bullets.forEach(b=>{ b.x += b.vx*dt; });
+  bullets = bullets.filter(b=>{
+    if(b.x < camX-60 || b.x > camX+W+60) return false;
+    if(b.from==='player'){
+      for(const e of enemies){
+        if(e.alive && Math.abs(e.x-b.x)<16){
+          e.hp -= b.dmg;
+          if(e.hp<=0 && e.alive){ e.alive=false; score+=10; SAVE.coins+=2; updateHud(); }
+          return false;
+        }
+      }
+    } else if(b.from==='enemy'){
+      if(player.alive && player.invuln<=0 && Math.abs(player.x-b.x)<16){
+        player.hp -= b.dmg; player.invuln=20; updateHud();
+        if(player.hp<=0) killPlayer();
+        return false;
+      }
+    }
+    return true;
+  });
+}
+function killPlayer(){
+  player.alive = false;
+  setTimeout(()=>gameOver(), 700);
+}
+
+// ---------- Render ----------
+function render(){
+  ctx.clearRect(0,0,W,H);
+  // sky
+  const grad = ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,'#4a86c9'); grad.addColorStop(1,'#8fc7e6');
+  ctx.fillStyle = grad; ctx.fillRect(0,0,W,H);
+  // ground
+  const gy = groundY();
+  ctx.fillStyle = '#3d5a2e'; ctx.fillRect(0,gy,W,H-gy);
+  ctx.fillStyle = '#2c4020'; ctx.fillRect(0,gy,W,6);
+  // distant hills (parallax)
+  ctx.fillStyle = 'rgba(0,0,0,0.08)';
+  for(let i=0;i<8;i++){
+    const hx = ((i*400 - camX*0.3) % (W+400)) - 200;
+    ctx.beginPath(); ctx.arc(hx, gy, 140, Math.PI, 0); ctx.fill();
+  }
+  if(levelState!=='level' && levelState!=='arena') return;
+
+  // coins
+  coinsOnGround.forEach(c=>{ if(!c.taken) drawCoinSprite(c.x-camX, gy-14); });
+  // enemies
+  enemies.forEach(e=>{
+    if(!e.alive) return;
+    const sx = e.x - camX;
+    if(sx<-40||sx>W+40) return;
+    drawSoldier(sx, gy, e.facing, Math.floor(e.walkTimer/12)%2, '#8a2a2a', '#4d1414', false);
+    // hp bar
+    ctx.fillStyle='#000'; ctx.fillRect(sx-16, gy-92, 32, 5);
+    ctx.fillStyle='#e64b3a'; ctx.fillRect(sx-16, gy-92, 32*(e.hp/e.maxHp), 5);
+  });
+  // bullets
+  bullets.forEach(b=>{
+    ctx.fillStyle = b.from==='player' ? '#ffe07a' : '#ff6a6a';
+    ctx.fillRect(b.x-camX-4, gy-48, 8, 3);
+  });
+  // remote players (PvP)
+  if(levelState==='arena'){
+    Object.values(remotePlayers).forEach(rp=>{
+      if(!rp.alive) return;
+      const sx = rp.x - camX;
+      const skin = SKINS[rp.skin]||SKINS.green;
+      drawSoldier(sx, gy, rp.facing, Math.floor((rp.walkTimer||0)/12)%2, skin.body, skin.dark, false);
+      ctx.fillStyle='#fff'; ctx.font='9px monospace'; ctx.textAlign='center';
+      ctx.fillText(rp.name||'?', sx, gy-98);
+      ctx.fillStyle='#000'; ctx.fillRect(sx-16, gy-92, 32, 5);
+      ctx.fillStyle='#3ad63a'; ctx.fillRect(sx-16, gy-92, 32*(rp.hp/100), 5);
+    });
+  }
+  // player
+  if(player.alive || player.invuln>0){
+    const sx = player.x - camX;
+    const skin = SKINS[SAVE.currentSkin] || SKINS.green;
+    if(player.invuln<=0 || Math.floor(player.invuln/4)%2===0){
+      drawSoldier(sx, gy + player.y, player.facing, Math.floor(player.walkTimer/12)%2, skin.body, skin.dark, firing);
+    }
+  }
+  // end flag
+  if(levelState==='level'){
+    const fx = levelEndX - camX;
+    if(fx>-20 && fx<W+20){
+      ctx.fillStyle='#8a6a3a'; ctx.fillRect(fx-2, gy-90, 4, 90);
+      ctx.fillStyle='#ffd23f'; ctx.fillRect(fx+2, gy-90, 26, 16);
+    }
+  }
+}
+
+function updateHud(){
+  document.getElementById('hpBarFill').style.width = Math.max(0,(player.hp/player.maxHp*100))+'%';
+  document.getElementById('hudScore').textContent = 'SCORE ' + score;
+  document.getElementById('hudCoins').textContent = '🪙 ' + SAVE.coins;
+  document.getElementById('hudDiamonds').textContent = '💎 ' + SAVE.diamonds;
+  document.getElementById('hudLevel').textContent = gameLevel;
+}
+
+// ---------- Game loop ----------
+let lastT = 0;
+function loop(t){
+  requestAnimationFrame(loop);
+  const dt = Math.min(2, (t-lastT)/16.67 || 1); lastT = t;
+  if(running && !paused){
+    if(levelState==='level'){
+      updatePlayer(dt); updateEnemies(dt); updateBullets(dt);
+    } else if(levelState==='arena'){
+      updateArenaLocal(dt);
+    }
+  }
+  render();
+}
+requestAnimationFrame(loop);
+
+// ---------- Scene management ----------
+function showOnly(id){
+  ['menuOverlay','lobbyOverlay','shopOverlay','mpMenuOverlay','joinOverlay','mpWaitOverlay',
+   'levelCompleteOverlay','gameOverOverlay','lbOverlay','pauseOverlay'].forEach(o=>{
+    document.getElementById(o).style.display = (o===id) ? 'flex' : 'none';
+  });
+}
+function goLobby(){
+  running = false; levelState='lobby';
+  document.getElementById('hud').style.display='none';
+  document.getElementById('controls').style.display='none';
+  document.getElementById('pauseBtn').style.display='none';
+  document.getElementById('lobbyCoins').textContent = SAVE.coins;
+  document.getElementById('lobbyDiamonds').textContent = SAVE.diamonds;
+  document.getElementById('lobbyBest').textContent = SAVE.bestScore;
+  document.getElementById('lobbyLevelNum').textContent = SAVE.highestLevel;
+  showOnly('lobbyOverlay');
+}
+function startLevel(){
+  gameLevel = SAVE.highestLevel;
+  resetLevelEntities();
+  generateLevel(gameLevel);
+  levelState='level'; running=true; paused=false;
+  document.getElementById('hud').style.display='flex';
+  document.getElementById('controls').style.display='block';
+  document.getElementById('pauseBtn').style.display='flex';
+  showOnly(null);
+  updateHud();
+}
+function completeLevel(){
+  running=false;
+  SAVE.diamonds += 5 + gameLevel;
+  SAVE.highestLevel = Math.max(SAVE.highestLevel, gameLevel+1);
+  if(score > SAVE.bestScore) SAVE.bestScore = score;
+  saveGame(); submitScore(SAVE.bestScore);
+  document.getElementById('lcScore').textContent = score;
+  showOnly('levelCompleteOverlay');
+}
+function gameOver(){
+  running=false;
+  if(score > SAVE.bestScore) SAVE.bestScore = score;
+  saveGame(); submitScore(SAVE.bestScore);
+  document.getElementById('goScore').textContent = score;
+  showOnly('gameOverOverlay');
+}
+
+// ---------- Shop ----------
+function renderShopUI(){
+  document.getElementById('shopCoins').textContent = SAVE.coins;
+  document.getElementById('shopDiamonds').textContent = SAVE.diamonds;
+  const grid = document.getElementById('shopGrid');
+  grid.innerHTML = '';
+  Object.keys(WEAPONS).forEach(key=>{
+    const w = WEAPONS[key];
+    const owned = SAVE.unlockedWeapons.includes(key);
+    const active = SAVE.currentWeapon===key;
+    const card = document.createElement('div');
+    card.className = 'shopCard' + (owned?' owned':'') + (active?' active':'');
+    card.innerHTML = `<div class="shopIcon">🔫</div><div>${w.name}</div><div>${owned? (active?'✅ فعال':'انتخاب') : '🪙 '+w.price}</div>`;
+    card.onclick = ()=>{
+      if(owned){ SAVE.currentWeapon=key; }
+      else if(SAVE.coins>=w.price){ SAVE.coins-=w.price; SAVE.unlockedWeapons.push(key); SAVE.currentWeapon=key; }
+      saveGame(); renderShopUI();
+    };
+    grid.appendChild(card);
+  });
+  Object.keys(SKINS).forEach(key=>{
+    const s = SKINS[key];
+    const owned = SAVE.unlockedSkins.includes(key);
+    const active = SAVE.currentSkin===key;
+    const card = document.createElement('div');
+    card.className = 'shopCard' + (owned?' owned':'') + (active?' active':'');
+    card.innerHTML = `<div class="shopIcon" style="color:${s.body}">👕</div><div>${s.name}</div><div>${owned? (active?'✅ فعال':'انتخاب') : '💎 '+s.price}</div>`;
+    card.onclick = ()=>{
+      if(owned){ SAVE.currentSkin=key; }
+      else if(SAVE.diamonds>=s.price){ SAVE.diamonds-=s.price; SAVE.unlockedSkins.push(key); SAVE.currentSkin=key; }
+      saveGame(); renderShopUI();
+    };
+    grid.appendChild(card);
+  });
+}
+
+// ---------- Multiplayer (PvP arena) ----------
+let ws=null, myPlayerId=null, roomMax=2, remotePlayers={}, arenaTimer=0, arenaKills=0;
+function connectWS(){
+  return new Promise((resolve,reject)=>{
+    try{ ws = new WebSocket(WS_BASE); }catch(e){ reject(e); return; }
+    ws.onopen = ()=>resolve(ws);
+    ws.onerror = ()=>reject(new Error('ws error'));
+    ws.onmessage = onWsMessage;
+    ws.onclose = ()=>{ if(levelState==='arena'){ /* opponent link dropped */ } };
+  });
+}
+function wsSend(obj){ if(ws && ws.readyState===1) ws.send(JSON.stringify(obj)); }
+
+function hostRoom(max){
+  roomMax = max;
+  connectWS().then(()=>{
+    wsSend({ type:'host', max });
+    document.getElementById('mpWaitTitle').textContent = 'در انتظار بازیکنان';
+    showOnly('mpWaitOverlay');
+  }).catch(()=>alert('اتصال به سرور برقرار نشد'));
+}
+function joinRoom(code){
+  connectWS().then(()=>{
+    wsSend({ type:'join', code });
+    document.getElementById('mpWaitTitle').textContent = 'در حال اتصال...';
+    document.getElementById('mpCodeBox').textContent = code;
+    showOnly('mpWaitOverlay');
+  }).catch(()=>alert('اتصال به سرور برقرار نشد'));
+}
+function onWsMessage(ev){
+  let msg; try{ msg = JSON.parse(ev.data); }catch(e){ return; }
+  if(msg.type==='hosted'){
+    myPlayerId = msg.playerId;
+    document.getElementById('mpCodeBox').textContent = msg.code;
+    document.getElementById('mpWaitList').textContent = '1 / ' + roomMax + ' بازیکن آماده';
+  } else if(msg.type==='joined'){
+    myPlayerId = msg.playerId;
+    document.getElementById('mpWaitList').textContent = msg.count + ' / ' + msg.max + ' بازیکن آماده';
+  } else if(msg.type==='playerJoined'){
+    document.getElementById('mpWaitList').textContent = msg.count + ' / ' + msg.max + ' بازیکن آماده';
+  } else if(msg.type==='start'){
+    startArena(msg.players);
+  } else if(msg.type==='state'){
+    const rp = remotePlayers[msg.from];
+    if(rp) Object.assign(rp, msg.data);
+  } else if(msg.type==='hit'){
+    if(msg.target===myPlayerId){
+      player.hp -= msg.dmg;
+      if(player.hp<=0 && player.alive){ player.alive=false; wsSend({type:'died'}); setTimeout(respawnArena,3000); }
+      updateHud();
+    }
+  } else if(msg.type==='kill'){
+    if(msg.from!==myPlayerId) return;
+  } else if(msg.type==='playerLeft'){
+    delete remotePlayers[msg.playerId];
+  } else if(msg.type==='error'){
+    alert(msg.reason==='not-found' ? 'کد اتاق پیدا نشد' : 'اتاق پره یا شروع شده');
+    showOnly('mpMenuOverlay');
+  }
+}
+function startArena(playerIds){
+  remotePlayers = {};
+  playerIds.forEach(id=>{ if(id!==myPlayerId) remotePlayers[id] = { x:200+id*300, y:0, hp:100, alive:true, facing:1, name:'P'+(id+1), skin:'urban' }; });
+  player = newPlayer(); player.x = 200 + myPlayerId*300;
+  levelWidth = 2000; camX=0; arenaKills=0; arenaTimer = 90*60;
+  levelState='arena'; running=true; paused=false;
+  document.getElementById('hud').style.display='flex';
+  document.getElementById('controls').style.display='block';
+  document.getElementById('pauseBtn').style.display='flex';
+  showOnly(null);
+  updateHud();
+}
+function respawnArena(){
+  player.alive = true; player.hp = 100; player.x = 200 + Math.random()*1600;
+}
+let stateTimer=0;
+function updateArenaLocal(dt){
+  updatePlayer(dt); // reuses movement/gravity/shooting (levelEndX far away, coins array empty)
+  bullets.forEach(b=>{ b.x += 0; });
+  // local bullet vs remote players
+  bullets = bullets.filter(b=>{
+    if(b.from!=='player') return true;
+    for(const id in remotePlayers){
+      const rp = remotePlayers[id];
+      if(rp.alive && Math.abs(rp.x-b.x)<16){
+        wsSend({ type:'hit', target:Number(id), dmg:b.dmg });
+        return false;
+      }
+    }
+    return b.x>camX-60 && b.x<camX+W+60;
+  });
+  stateTimer += dt;
+  if(stateTimer>4){
+    stateTimer=0;
+    wsSend({ type:'state', data:{ x:player.x, y:player.y, hp:player.hp, alive:player.alive, facing:player.facing, walkTimer:player.walkTimer, skin:SAVE.currentSkin, name:getUsername() } });
+  }
+  arenaTimer -= dt;
+  if(arenaTimer<=0){ running=false; alert('زمان تموم شد!'); goLobby(); }
+}
+
+// ---------- UI wiring ----------
+document.getElementById('menuStartBtn').onclick = ()=> ensureUsername(()=>goLobby());
+document.getElementById('lobbyPlayBtn').onclick = startLevel;
+document.getElementById('lobbyShopBtn').onclick = ()=>{ renderShopUI(); showOnly('shopOverlay'); };
+document.getElementById('shopBackBtn').onclick = goLobby;
+document.getElementById('lobbyMpBtn').onclick = ()=> showOnly('mpMenuOverlay');
+document.getElementById('mpBackBtn').onclick = goLobby;
+document.getElementById('mpHost2Btn').onclick = ()=>hostRoom(2);
+document.getElementById('mpHost4Btn').onclick = ()=>hostRoom(4);
+document.getElementById('mpJoinBtn').onclick = ()=> showOnly('joinOverlay');
+document.getElementById('joinBackBtn').onclick = ()=> showOnly('mpMenuOverlay');
+document.getElementById('joinConfirmBtn').onclick = ()=>{
+  const code = document.getElementById('joinCodeInput').value.trim().toUpperCase();
+  if(code) joinRoom(code);
+};
+document.getElementById('mpCancelBtn').onclick = ()=>{ if(ws) ws.close(); goLobby(); };
+document.getElementById('lcContinueBtn').onclick = goLobby;
+document.getElementById('goContinueBtn').onclick = goLobby;
+document.getElementById('lobbyLbBtn').onclick = ()=>{ loadLeaderboard(); showOnly('lbOverlay'); };
+document.getElementById('lbBackBtn').onclick = goLobby;
+document.getElementById('lobbyNameBtn').onclick = ()=> showUsernameModal(getUsername(), v=>localStorage.setItem(USERNAME_KEY, v));
+document.getElementById('pauseBtn').onclick = ()=>{ paused=true; showOnly('pauseOverlay'); };
+document.getElementById('resumeBtn').onclick = ()=>{ paused=false; showOnly(null); };
+document.getElementById('quitBtn').onclick = ()=>{ if(ws){ws.close(); ws=null;} goLobby(); };
+
+goLobby(); // will be hidden behind menuOverlay until user presses start
+</script>
+</body>
+</html>
