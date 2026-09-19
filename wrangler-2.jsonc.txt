@@ -1,0 +1,20 @@
+{
+  "name": "little-soldier",
+  "main": "worker.js",
+  "compatibility_date": "2026-09-18",
+  "durable_objects": {
+    "bindings": [
+      { "name": "ARENA", "class_name": "Arena" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["Arena"] }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "little-soldier-db",
+      "database_id": "PUT-YOUR-NEW-DATABASE-ID-HERE"
+    }
+  ]
+}
