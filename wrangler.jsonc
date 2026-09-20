@@ -1,20 +1,20 @@
 {
-  "name": "little-soldier",
+  "name": "how-to-fish",
   "main": "worker.js",
   "compatibility_date": "2026-09-18",
   "durable_objects": {
     "bindings": [
-      { "name": "ARENA", "class_name": "Arena" }
+      { "name": "DOCK", "class_name": "Dock" }
     ]
   },
   "migrations": [
-    { "tag": "v1", "new_sqlite_classes": ["Arena"] }
+    { "tag": "v1", "new_sqlite_classes": ["Dock"] }
   ],
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "little-soldier-db",
-      "database_id": "39b191f5-6f04-40b3-81d2-ecab8d669785"
+      "database_name": "how-to-fish-db",
+      "database_id": "REPLACE-WITH-YOUR-D1-DATABASE-ID"
     }
   ]
 }
