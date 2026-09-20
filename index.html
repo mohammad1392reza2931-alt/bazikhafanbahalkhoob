@@ -122,6 +122,7 @@ html,body,canvas#c{touch-action:none;-webkit-touch-callout:none;-webkit-tap-high
   <div id="target" class="stroke"></div>
   <div id="power" class="bar hidden"><i id="powerFill"></i></div>
   <div id="tension" class="bar hidden"><i id="tenFill"></i><span>فشار نخ</span></div>
+  <button id="releaseBtn" class="hidden" style="position:fixed;left:50%;bottom:130px;transform:translateX(-50%);z-index:60;background:#e53935;color:#fff;border:4px solid #7a0000;border-radius:50%;width:112px;height:112px;font-size:16px;font-weight:900;box-shadow:0 7px 0 #7a0000;">رهاش کن!</button>
   <div id="hint" class="stroke"></div>
   <div id="toasts"></div>
   <div id="tc">
@@ -143,14 +144,16 @@ html,body,canvas#c{touch-action:none;-webkit-touch-callout:none;-webkit-tap-high
       <div><b>W A S D</b> حرکت</div><div><b>Shift</b> دویدن</div>
       <div><b>Space</b> پرش</div><div><b>ماوس</b> نگاه کردن</div>
       <div><b>نگه‌داشتن کلیک</b> شارژ پرتاب، رها کردن = پرتاب</div><div><b>کلیک سریع</b> وقتی شناور رفت زیر آب</div>
-      <div><b>نگه‌داشتن کلیک</b> قرقره؛ ماهی تقلا کرد رها کن</div><div><b>E</b> برداشتن ماهی / فروشگاه</div>
+      <div><b>نگه‌داشتن کلیک</b> قرقره؛ همینجوری نگه‌دار تا کامل بیاد</div><div><b>R یا دکمه قرمز</b> رها کردن ماهی گرفته‌شده</div>
+      <div><b>E</b> برداشتن ماهی / فروشگاه</div>
       <div><b>۱</b> چوب ماهیگیری</div><div><b>۲</b> سلاح (ماهی رو قبل از فرار بکش)</div>
     </div>
     <div class="keys only-touch">
       <div><b>جوی‌استیک چپ</b> حرکت (تا آخر = دویدن)</div><div><b>کشیدن روی صفحه</b> نگاه کردن</div>
       <div><b>دکمه بزرگ</b> نگه‌دار = شارژ پرتاب، رها کن = پرتاب</div><div><b>بکش!</b> وقتی شناور رفت زیر آب بزن</div>
-      <div><b>دکمه بزرگ</b> نگه‌داشتن = قرقره؛ ماهی تقلا کرد رها کن</div><div><b>بردار / فروشگاه</b> کنار ماهی یا مغازه ظاهر می‌شه</div>
-      <div><b>چوب / سلاح</b> عوض کردن ابزار</div><div><b>پرش</b> بپر</div>
+      <div><b>دکمه بزرگ</b> نگه‌داشتن = قرقره؛ همینجوری نگه‌دار تا کامل بیاد</div><div><b>دکمه قرمز</b> وقتی ماهی رو گرفتی، هر جا خواستی رهاش کن</div>
+      <div><b>بردار / فروشگاه</b> کنار ماهی یا مغازه ظاهر می‌شه</div><div><b>چوب / سلاح</b> عوض کردن ابزار</div>
+      <div><b>پرش</b> بپر</div>
     </div>
     <div class="center"><button class="btn" id="startBtn">شروع ماجرا (تک‌نفره)</button></div>
     <p class="muted center only-kb" style="margin-top:12px;font-size:13px">اگه ماوس قفل نشد: با کلیدهای جهت‌نما بچرخید. برای بهترین تجربه بازی رو تو یک تب کامل مرورگر باز کنید.</p>
@@ -594,7 +597,7 @@ function pickFish(){
   for(const t of tbl){r-=t[1];if(r<=0)return FISH_BY[t[0]];}return FISH_BY[tbl[0][0]];
 }
 function setLineVisible(v){bobber.visible=v;line.visible=v;}
-function resetRod(){R.st='idle';setLineVisible(false);$('power').classList.add('hidden');$('tension').classList.add('hidden');setStatus('');}
+function resetRod(){R.st='idle';setLineVisible(false);$('power').classList.add('hidden');$('tension').classList.add('hidden');$('releaseBtn').classList.add('hidden');setStatus('');}
 function onDown(){
   if(S.equip==='weapon'){attack();return;}
   if(R.st==='idle'){R.st='charging';R.power=0;R.dir=1;}
@@ -617,6 +620,15 @@ function hook(){
 }
 function loseFish(msg){
   SFX.snap();toast(msg,'bad');burst(R.b,0xcff6ff,10,2,3,.7,1);resetRod();
+}
+function hookLanded(){
+  R.st='hooked';setLineVisible(true);$('tension').classList.add('hidden');$('releaseBtn').classList.remove('hidden');
+  SFX.hook();setStatus('ماهی رو گرفتی! رها کن هر جا خواستی','good');toast('ماهی رو گرفتی! دکمه قرمز رو بزن تا رهاش کنی 🎣','good');
+}
+function releaseFish(){
+  if(R.st!=='hooked')return;
+  $('releaseBtn').classList.add('hidden');
+  landFish();
 }
 function landFish(){
   const def=R.def,rare=R.rare;
@@ -671,27 +683,30 @@ function updateRod(dt){
       else{R.phase='calm';R.phaseT=rand(.8,1.8);}
     }
     const th=R.phase==='thrash',reeling=input.mouse;
-    let dT=0;if(reeling)dT+=16*def.pull/rl.str;if(th)dT+=22*def.pull/rl.str;if(!reeling)dT-=24;
-    R.tension=clamp(R.tension+dT*dt,0,100);
+    // simple hold-to-reel: holding always brings the fish in (no risk of the line snapping),
+    // a thrashing fish just resists a bit harder and wiggles more — no need to ever let go.
     const dx=player.pos.x-R.b.x,dz=player.pos.z-R.b.z,d=Math.max(.001,Math.hypot(dx,dz)),nx=dx/d,nz=dz/d;
-    let sp=0;if(reeling)sp+=rl.reel*(th?.25:1)/(.6+.4*def.pull);if(th)sp-=def.pull*2.4;
-    const lat=Math.sin(WT*2.3+R.seed)*def.pull*1.2*(th?2:.6);
+    let sp=0;if(reeling)sp=rl.reel*(th?.5:1)/(.6+.4*def.pull);
+    const lat=Math.sin(WT*2.3+R.seed)*def.pull*(th?.9:.35)*(reeling?.6:1);
     R.b.x+=nx*sp*dt-nz*lat*dt;R.b.z+=nz*sp*dt+nx*lat*dt;
     {const hr=Math.hypot(R.b.x,R.b.z);if(hr>150){R.b.x*=150/hr;R.b.z*=150/hr;}}
     R.b.y=waveH(R.b.x,R.b.z,WT)-(th?.18:.05);bobber.position.copy(R.b);
     R.tugT-=dt;if(th&&R.tugT<=0){burst(R.b,0xcff6ff,5,1.6,3,.5,.8);R.tugT=.25;}
     if(reeling){R.tickT-=dt;if(R.tickT<=0){SFX.tick();R.tickT=.09;}}
+    R.tension=clamp(100*(1-Math.min(1,d/38)),0,100); // now just shows how close the fish is, purely visual
     $('tenFill').style.width=R.tension+'%';$('tenFill').style.backgroundSize=$('tension').clientWidth+'px 100%';
-    $('tension').classList.toggle('danger',R.tension>78);
-    if(th)setStatus('تقلا می‌کنه — رها کن!!','warn');else setStatus('قرقره کن!','');
-    if(R.tension>=100){loseFish('نخ پاره شد! ماهی فرار کرد.');return;}
-    if(!overWater(R.b.x,R.b.z)||Math.hypot(R.b.x-player.pos.x,R.b.z-player.pos.z)<2.5)landFish();
+    $('tension').classList.toggle('danger',false);
+    setStatus(reeling?(th?'داره تقلا می‌کنه — قرقره رو نگه‌دار!':'قرقره کن!'):'دکمه رو نگه‌دار تا قرقره بشه','');
+    if(d<2.5)hookLanded();
+  }else if(R.st==='hooked'){
+    // fish is caught right on the hook — it stays here until the player releases it themselves
+    R.b.copy(tipW);R.b.y-=.12;bobber.position.copy(R.b);
   }
   // line
   if(line.visible){
     const pa=lineGeo.attributes.position;
     const dist=tipW.distanceTo(bobber.position);
-    let sag=.5;if(R.st==='waiting'||R.st==='bite')sag=1;if(R.st==='fight')sag=lerp(1.2,.05,R.tension/100);
+    let sag=.5;if(R.st==='waiting'||R.st==='bite')sag=1;if(R.st==='fight')sag=lerp(1.2,.05,R.tension/100);if(R.st==='hooked')sag=.05;
     sag*=.3+dist*.02;
     for(let i=0;i<LN;i++){const t=i/(LN-1);pa.setXYZ(i,lerp(tipW.x,bobber.position.x,t),lerp(tipW.y,bobber.position.y,t)-sag*4*t*(1-t),lerp(tipW.z,bobber.position.z,t));}
     pa.needsUpdate=true;line.material.color.setHex(R.st==='fight'&&R.tension>75?0xff6a4a:0xffffff);
@@ -853,7 +868,8 @@ function updateHint(){
   else if(R.st==='idle')h=fishes.some(f=>f.state==='alive')?KEY('ماهی داره تقلا می‌کنه! کلید ۲ = سلاح','ماهی تقلا می‌کنه! سلاح رو بردار'):KEY('نگه‌داشتن کلیک = شارژ پرتاب • رها کردن = پرتاب','نگه‌دار = شارژ • رها کن = پرتاب');
   else if(R.st==='charging')h=KEY('رها کن تا پرتاب بشه (بالاتر نگاه کنی دورتر می‌ره)','رها کن! (بالاتر نگاه کنی دورتر می‌ره)');
   else if(R.st==='waiting')h=KEY('صبر کن… (کلیک = جمع کردن قلاب)','صبر کن… (بزن = جمع کردن)');
-  else if(R.st==='fight')h=KEY('نگه‌دار = قرقره • وقتی ماهی تقلا می‌کنه رها کن','نگه‌دار = قرقره • تقلا کرد رها کن');
+  else if(R.st==='fight')h=KEY('نگه‌دار = قرقره؛ همینجوری نگه‌دار تا کامل بیاد','نگه‌دار = قرقره؛ فقط نگه‌دار تا بیاد');
+  else if(R.st==='hooked')h=KEY('ماهی رو گرفتی! دکمه قرمز رو بزن تا رهاش کنی','ماهی رو گرفتی! دکمه قرمز = رها کردن');
   if(h!==lastHint){$('hint').textContent=h;lastHint=h;}
   // target
   let t='';
@@ -869,6 +885,7 @@ function updateHint(){
     else if(R.st==='waiting')lab='جمع کن';
     else if(R.st==='bite')lab='بکش!';
     else if(R.st==='fight')lab='قرقره';
+    else if(R.st==='hooked')lab='…';
     else lab='…';
     if(lab!==lastAct){$('bAct').textContent=lab;lastAct=lab;}
     const tl=S.equip==='rod'?'سلاح':'چوب';if(tl!==lastTool){$('bTool').textContent=tl;lastTool=tl;}
@@ -1017,6 +1034,8 @@ $('joinBtn').onclick=()=>{
   if(!code){$('mpStatus').textContent='اول کد اتاق رو وارد کن.';return;}
   $('mpStatus').textContent='در حال اتصال...';mpConnect(()=>mpSend({type:'join',code}));
 };
+$('releaseBtn').addEventListener('click',releaseFish);
+$('releaseBtn').addEventListener('touchstart',e=>{e.preventDefault();releaseFish();},{passive:false});
 (function initUname(){const u=getUsername();if(u)$('mpName').value=u;})();
 async function submitScore(){
   const u=getUsername();if(!u)return;
@@ -1084,6 +1103,7 @@ document.addEventListener('keydown',e=>{
   if(e.code==='Digit1')equip('rod');
   else if(e.code==='Digit2')equip('weapon');
   else if(e.code==='KeyE')interact();
+  else if(e.code==='KeyR'){if(R.st==='hooked')releaseFish();}
   else if(e.code==='KeyK'){S.money+=500;updateHUD();toast('+۵۰۰ $ (کد تقلب!)');}
 });
 document.addEventListener('keyup',e=>{keys[e.code]=false;});
