@@ -993,8 +993,8 @@ function mpConnect(onOpen){
   ws.onerror=()=>{$('mpStatus').textContent='اتصال به سرور چندنفره برقرار نشد. آدرس Worker رو چک کن.';};
   ws.onmessage=ev=>{
     let m;try{m=JSON.parse(ev.data);}catch(e){return;}
-    if(m.type==='hosted'){MP.room=m.code;MP.myId=m.playerId;$('mpStatus').textContent='کد اتاق: '+m.code+' — این کد رو به دوستات بده!';updateMPHud(1,MP.max);}
-    else if(m.type==='joined'){MP.myId=m.playerId;MP.max=m.max;MP.room=$('mpCode').value.trim().toUpperCase();$('mpStatus').textContent='وارد اتاق شدی، منتظر بقیه...';updateMPHud(m.count,m.max);}
+    if(m.type==='hosted'){MP.room=m.code;MP.myId=m.playerId;$('mpStatus').textContent='کد اتاق: '+m.code+' — این کد رو به دوستات بده!';updateMPHud(1,MP.max);beginMPPlay();}
+    else if(m.type==='joined'){MP.myId=m.playerId;MP.max=m.max;MP.room=$('mpCode').value.trim().toUpperCase();$('mpStatus').textContent='وارد اتاق شدی، منتظر بقیه...';updateMPHud(m.count,m.max);beginMPPlay();}
     else if(m.type==='error'){$('mpStatus').textContent=m.reason==='not-found'?'کد اتاق پیدا نشد.':'اتاق پره!';}
     else if(m.type==='playerJoined'){toast('یه دوست به بازی پیوست! ('+m.count+'/'+m.max+')','good');updateMPHud(m.count,m.max);addRemote(m.playerId,'بازیکن '+(m.playerId+1));}
     else if(m.type==='playerLeft'){toast('یکی از دوستات از بازی رفت.','bad');removeRemote(m.playerId);}
@@ -1009,13 +1009,13 @@ function beginMPPlay(){
 }
 $('hostBtn').onclick=()=>{
   const uname=($('mpName').value||'ماهیگیر').trim().slice(0,14)||'ماهیگیر';setUsername(uname);
-  $('mpStatus').textContent='در حال اتصال...';mpConnect(()=>mpSend({type:'host',max:8}));beginMPPlay();
+  $('mpStatus').textContent='در حال اتصال...';mpConnect(()=>mpSend({type:'host',max:8}));
 };
 $('joinBtn').onclick=()=>{
   const uname=($('mpName').value||'ماهیگیر').trim().slice(0,14)||'ماهیگیر';setUsername(uname);
   const code=($('mpCode').value||'').trim().toUpperCase();
   if(!code){$('mpStatus').textContent='اول کد اتاق رو وارد کن.';return;}
-  $('mpStatus').textContent='در حال اتصال...';mpConnect(()=>mpSend({type:'join',code}));beginMPPlay();
+  $('mpStatus').textContent='در حال اتصال...';mpConnect(()=>mpSend({type:'join',code}));
 };
 (function initUname(){const u=getUsername();if(u)$('mpName').value=u;})();
 async function submitScore(){
