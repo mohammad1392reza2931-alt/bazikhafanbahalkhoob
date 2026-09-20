@@ -8,7 +8,7 @@
     ]
   },
   "migrations": [
-    { "tag": "v1", "new_sqlite_classes": ["Dock"] }
+    { "tag": "v2-little-soldier", "new_sqlite_classes": ["Dock"] }
   ],
   "d1_databases": [
     {
