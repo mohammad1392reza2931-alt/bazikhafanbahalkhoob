@@ -1,5 +1,5 @@
-// worker.js — Little Soldier backend
-// Handles: PvP room relay (WebSocket, via Durable Object "Arena") + D1 leaderboard API
+// worker.js — How to Fish backend
+// Handles: co-op room relay (WebSocket, via Durable Object "Dock") + D1 leaderboard API
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -54,15 +54,15 @@ export default {
       return handleLeaderboard(env);
     }
 
-    // Everything else (the raw WebSocket connection from the game) goes to the Arena Durable Object.
-    const id = env.ARENA.idFromName("global-arena-manager");
-    const stub = env.ARENA.get(id);
+    // Everything else (the raw WebSocket connection from the game) goes to the Dock Durable Object.
+    const id = env.DOCK.idFromName("global-dock-manager");
+    const stub = env.DOCK.get(id);
     return stub.fetch(request);
   }
 };
 
-// ---------- Durable Object: manages all PvP rooms in memory ----------
-export class Arena {
+// ---------- Durable Object: manages all co-op fishing rooms in memory ----------
+export class Dock {
   constructor(state, env) {
     this.state = state;
     this.env = env;
@@ -105,13 +105,13 @@ export class Arena {
 
     if (msg.type === "host") {
       const code = this.genCode();
-      const max = msg.max === 4 ? 4 : 2;
+      const max = Math.max(2, Math.min(8, Number(msg.max) || 8));
       const room = { max, sockets: new Map(), started: false };
       room.sockets.set(0, ws);
       ws._roomCode = code;
       ws._playerId = 0;
       this.rooms.set(code, room);
-      ws.send(JSON.stringify({ type: "hosted", code, playerId: 0 }));
+      ws.send(JSON.stringify({ type: "hosted", code, playerId: 0, max }));
       return;
     }
 
@@ -119,7 +119,7 @@ export class Arena {
       const code = String(msg.code || "").toUpperCase().trim();
       const room = this.rooms.get(code);
       if (!room) { ws.send(JSON.stringify({ type: "error", reason: "not-found" })); return; }
-      if (room.started || room.sockets.size >= room.max) {
+      if (room.sockets.size >= room.max) {
         ws.send(JSON.stringify({ type: "error", reason: "full" }));
         return;
       }
@@ -130,10 +130,11 @@ export class Arena {
       ws._playerId = playerId;
       ws.send(JSON.stringify({ type: "joined", playerId, count: room.sockets.size, max: room.max }));
       this.broadcastRoom(room, { type: "playerJoined", playerId, count: room.sockets.size, max: room.max }, playerId);
-      if (room.sockets.size === room.max) {
+      if (!room.started) {
         room.started = true;
         const ids = Array.from(room.sockets.keys());
         this.broadcastRoom(room, { type: "start", players: ids }, -1);
+        ws.send(JSON.stringify({ type: "start", players: ids }));
       }
       return;
     }
@@ -141,13 +142,9 @@ export class Arena {
     const room = this.rooms.get(ws._roomCode);
     if (!room) return;
 
-    if (msg.type === "state" || msg.type === "shoot") {
+    // Fishing co-op relay: live position/heading + catch announcements.
+    if (msg.type === "state" || msg.type === "catch") {
       this.broadcastRoom(room, Object.assign({}, msg, { from: ws._playerId }), ws._playerId);
-    } else if (msg.type === "hit") {
-      const target = room.sockets.get(msg.target);
-      if (target) target.send(JSON.stringify({ type: "hit", target: msg.target, dmg: msg.dmg, from: ws._playerId }));
-    } else if (msg.type === "died") {
-      this.broadcastRoom(room, { type: "died", playerId: ws._playerId }, ws._playerId);
     }
   }
 
