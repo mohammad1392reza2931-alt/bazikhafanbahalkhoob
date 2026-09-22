@@ -39,6 +39,28 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #tension.danger{animation:shake .12s infinite}
 @keyframes shake{0%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(3px)}100%{transform:translateX(-50%) translateY(-2px)}}
 #hint{position:absolute;left:50%;bottom:34px;transform:translateX(-50%);font-size:19px;font-weight:800;text-align:center;white-space:nowrap}
+/* vitals (health / hunger) */
+#vitals{top:106px;right:18px;flex-direction:column;align-items:stretch;gap:5px;width:180px}
+.vbar{position:relative;height:17px;border:3px solid var(--ink);border-radius:8px;overflow:hidden;background:#0007}
+.vbar i{display:block;height:100%;width:100%;transition:width .25s}
+#healthFill{background:linear-gradient(90deg,#ff5a36,#ff8a70)}
+#hungerFill{background:linear-gradient(90deg,#ffd23f,#ffb23f)}
+.vbar span{position:absolute;inset:0;display:grid;place-items:center;font-size:10.5px;font-weight:900;color:#fff;text-shadow:0 1px 0 var(--ink),1px 0 0 var(--ink),-1px 0 0 var(--ink)}
+.touch #vitals{top:calc(90px + env(safe-area-inset-top));right:calc(12px + env(safe-area-inset-right));width:130px}
+.touch .vbar{height:13px}.touch .vbar span{font-size:9px}
+/* bottom inventory bar */
+#invbar{position:absolute;left:50%;bottom:64px;transform:translateX(-50%);display:flex;gap:6px;pointer-events:auto;max-width:94vw;flex-wrap:wrap;justify-content:center;justify-content:safe center}
+.touch #invbar{bottom:calc(58px + env(safe-area-inset-bottom));max-width:52vw;gap:4px}
+.islot{position:relative;width:52px;height:52px;background:rgba(20,38,46,.6);border:3px solid var(--ink);border-radius:10px;display:grid;place-items:center;font-size:23px;cursor:pointer;box-shadow:0 3px 0 var(--ink)}
+.islot.active{border-color:var(--sun);box-shadow:0 0 0 2px var(--sun),0 3px 0 var(--ink)}
+.islot .badge{position:absolute;bottom:-5px;left:-5px;background:var(--sun);color:var(--ink);font-size:10px;font-weight:900;border-radius:8px;padding:0 4px;border:2px solid var(--ink);white-space:nowrap}
+.islot img.ico{width:100%;height:100%;object-fit:contain;pointer-events:none;filter:drop-shadow(0 2px 0 rgba(0,0,0,.35))}
+#bAct small{display:block;font-size:14px;font-weight:800;margin-top:2px}
+#bTool{display:none!important}
+.islot .lab{position:absolute;bottom:60px;left:50%;transform:translateX(-50%);font-size:10.5px;font-weight:800;white-space:nowrap;background:var(--ink);color:#fff;padding:2px 6px;border-radius:5px;opacity:0;transition:opacity .12s;pointer-events:none}
+.islot:hover .lab{opacity:1}
+.touch .islot{width:42px;height:42px;font-size:18px;border-width:2px}
+.touch .islot .lab{display:none}
 #toasts{position:absolute;left:18px;top:14px;width:330px;display:flex;flex-direction:column;gap:8px}
 .toast{background:var(--cream);color:var(--ink);border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);padding:7px 12px;border-radius:10px;font-weight:800;font-size:16px;animation:tin .18s ease-out}
 .toast.good{background:var(--sun)}
@@ -108,6 +130,17 @@ html,body,canvas#c{touch-action:none;-webkit-touch-callout:none;-webkit-tap-high
   .card{padding:12px 18px;line-height:1.6}.keys{font-size:13px;margin:6px 0 10px}
   h2{font-size:18px}.row{font-size:14px}
 }
+#gearBtn{position:absolute;top:calc(10px + env(safe-area-inset-top));left:calc(50% + 150px);width:42px;height:42px;border-radius:50%;background:rgba(20,38,46,.62);border:3px solid var(--ink);color:#fff;font-size:22px;line-height:1;display:grid;place-items:center;pointer-events:auto;cursor:pointer;box-shadow:0 3px 0 var(--ink);user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.touch #gearBtn{left:50%;margin-left:-19px;top:calc(8px + env(safe-area-inset-top));width:38px;height:38px;font-size:19px}
+#gfx.overlay{background:rgba(9,54,66,.3)}
+#gfx .card{max-width:560px}
+#gfx .row{flex-wrap:wrap}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{font:inherit;font-weight:800;font-size:14px;color:var(--ink);background:#fff;border:3px solid var(--ink);border-radius:10px;padding:1px 12px;cursor:pointer;box-shadow:0 3px 0 var(--ink)}
+.seg button.on{background:var(--sun)}
+#gfx input[type=range]{width:140px;accent-color:var(--coral);vertical-align:middle}
+#fpsV{position:fixed;left:50%;transform:translateX(-50%);top:calc(56px + env(safe-area-inset-top));font:800 12px Vazirmatn,Tahoma,sans-serif;color:#fff;background:rgba(0,0,0,.5);padding:1px 7px;border-radius:6px;pointer-events:none;z-index:50;direction:ltr}
+@media (max-height:520px){#gfx .card{padding:10px 16px;line-height:1.5}#gfx .row{padding:3px 0;font-size:13px}.seg button{font-size:13px}}
 </style>
 </head>
 <body>
@@ -116,7 +149,13 @@ html,body,canvas#c{touch-action:none;-webkit-touch-callout:none;-webkit-tap-high
 <div id="hud" class="hidden">
   <div id="money" class="pill stroke"><i class="coin">$</i><b id="moneyV">۰</b></div>
   <div id="cooler" class="pill stroke">یخدان: <b id="coolerV">۰/۴</b></div>
-  <div id="buffs" class="pill stroke hidden" style="top:94px;right:18px;font-size:15px"></div>
+  <div id="vitals" class="pill stroke">
+    <div class="vbar" id="healthBar"><i id="healthFill"></i><span>❤ <b id="healthV">100</b></span></div>
+    <div class="vbar" id="hungerBar"><i id="hungerFill"></i><span>🍗 <b id="hungerV">100</b></span></div>
+  </div>
+  <div id="buffs" class="pill stroke hidden" style="top:158px;right:18px;font-size:15px"></div>
+  <div id="invbar"></div>
+  <div id="gearBtn" title="تنظیمات گرافیک (G)">⚙</div>
   <div id="mpHud" class="pill stroke hidden" style="top:138px;right:18px;font-size:14px">👥 <b id="mpHudV"></b></div>
   <div id="goal" class="stroke">هدف: تعمیر قایق و رفتن به جزیره طلایی<div class="track"><div class="fill" id="goalFill"></div></div></div>
   <div id="cross"></div>
@@ -147,6 +186,7 @@ html,body,canvas#c{touch-action:none;-webkit-touch-callout:none;-webkit-tap-high
       <div><b>نگه‌داشتن کلیک</b> شارژ پرتاب، رها کردن = پرتاب</div><div><b>کلیک سریع</b> وقتی شناور رفت زیر آب</div>
       <div><b>نگه‌داشتن کلیک</b> قرقره؛ ماهی تقلا کرد رها کن</div><div><b>E</b> برداشتن ماهی / فروشگاه</div>
       <div><b>۱</b> چوب ماهیگیری</div><div><b>۲</b> سلاح (ماهی رو قبل از فرار بکش)</div>
+      <div><b>F</b> ماهی توی دست (کلیک = خوردن / فروختن)</div><div><b>G</b> تنظیمات گرافیک</div>
     </div>
     <div class="keys only-touch">
       <div><b>جوی‌استیک چپ</b> حرکت (تا آخر = دویدن)</div><div><b>کشیدن روی صفحه</b> نگاه کردن</div>
@@ -155,6 +195,7 @@ html,body,canvas#c{touch-action:none;-webkit-touch-callout:none;-webkit-tap-high
       <div><b>چوب / سلاح</b> عوض کردن ابزار</div><div><b>پرش</b> بپر</div>
     </div>
     <div class="center"><button class="btn" id="startBtn">شروع ماجرا (تک‌نفره)</button></div>
+    <div class="center" style="margin-top:10px"><button class="btn teal sm" id="gfxMenuBtn">⚙️ تنظیمات گرافیک</button></div>
     <p class="muted center only-kb" style="margin-top:12px;font-size:13px">اگه ماوس قفل نشد: با کلیدهای جهت‌نما بچرخید. برای بهترین تجربه بازی رو تو یک تب کامل مرورگر باز کنید.</p>
     <div style="margin-top:18px;border-top:2px dashed #14262e33;padding-top:14px">
       <h2 class="center" style="margin-bottom:8px">🎣 بازی چندنفره با دوستان</h2>
@@ -181,8 +222,11 @@ html,body,canvas#c{touch-action:none;-webkit-touch-callout:none;-webkit-tap-high
 </div>
 
 <div id="pause" class="overlay hidden">
-  <div class="card center"><h2>بازی متوقف شد</h2><p style="margin-bottom:14px">برای ادامه کلیک کن.</p><button class="btn" id="resumeBtn">ادامه بازی</button></div>
+  <div class="card center"><h2>بازی متوقف شد</h2><p style="margin-bottom:14px">برای ادامه کلیک کن.</p><button class="btn" id="resumeBtn">ادامه بازی</button> <button class="btn teal sm" id="gfxPauseBtn" style="margin-right:8px">⚙️ تنظیمات گرافیک</button></div>
 </div>
+
+<div id="gfx" class="overlay hidden"><div class="card" id="gfxCard"></div></div>
+<div id="fpsV" class="hidden"></div>
 
 <div id="shop" class="overlay hidden"><div class="card wide" id="shopCard"></div></div>
 
@@ -950,7 +994,9 @@ const WS_BASE  = "wss://little-soldier.astyw79.workers.dev";
 /* ============ data ============ */
 const S={started:false,paused:false,shop:false,won:false,noLock:false,everLocked:false,
   money:0,earned:0,time:0,caught:0,rodLv:1,lureLv:1,hookLv:1,weaponLv:0,coolerLv:1,inv:[],equip:'rod',lastBet:'',goldBait:0,reelOil:0,lineIns:0,energyT:0,shopIsle:1,
-  boatRepaired:false,visitedIsle2:false};
+  boatRepaired:false,visitedIsle2:false,
+  health:100,maxHealth:100,hunger:100,maxHunger:100,fainted:false,
+  baits:{bread:true},equippedBait:'bread',hasBoatKey:false};
 const ROD=[null,{n:'چوب‌دستی چوبی',cast:24,str:1.0,reel:4.5},{n:'فایبرگلاس',cast:30,str:1.5,reel:6},{n:'کربن حرفه‌ای',cast:36,str:2.1,reel:8},{n:'چوب طلایی افسانه‌ای',cast:44,str:3.0,reel:11},
  {n:'تیتانیوم دریایی',cast:50,str:3.9,reel:13.5},{n:'چوب مرجانی درخشان',cast:55,str:4.9,reel:16},{n:'چوب سه‌شاخه پوزئیدون',cast:60,str:6.2,reel:19}];
 const ROD_COL=[0,0x8a5a2b,0x2f7fd0,0x222222,0xffc83a,0x9aa7b3,0xff6f91,0x36e0c8];
@@ -958,6 +1004,20 @@ const ROD_P=[0,0,120,500,1500,3200,6500,12000];
 const LURE=[null,{n:'نان بیات',bite:[2.5,6]},{n:'کرم خاکی',bite:[2,5]},{n:'هات‌داگ',bite:[1.5,4]},{n:'هویج جادویی',bite:[1,3]},
  {n:'ماهی زنده',bite:[.9,2.6]},{n:'میگوی مرجانی',bite:[.7,2.1]},{n:'مروارید افسانه‌ای',bite:[.5,1.6]}];
 const LURE_P=[0,0,60,300,900,2200,4500,9000];
+// طعمه‌ها: هر کدوم جدا خریداری می‌شن و توی اینونتوری می‌مونن (نه ارتقا)
+const BAITS=[
+ {id:'bread',tier:1,n:LURE[1].n,p:0,emoji:'🍞'},
+ {id:'worm',tier:2,n:LURE[2].n,p:LURE_P[2],emoji:'🪱'},
+ {id:'hotdog',tier:3,n:LURE[3].n,p:LURE_P[3],emoji:'🌭'},
+ {id:'carrot',tier:4,n:LURE[4].n,p:LURE_P[4],emoji:'🥕'},
+ {id:'livefish',tier:5,n:LURE[5].n,p:LURE_P[5],emoji:'🐠'},
+ {id:'shrimp',tier:6,n:LURE[6].n,p:LURE_P[6],emoji:'🦐'},
+ {id:'pearl',tier:7,n:LURE[7].n,p:LURE_P[7],emoji:'🦪'},
+ {id:'boss1bait',tier:1,n:'طعمه‌ی هیولای اسکله',bite:[1.4,2.6],p:1000,emoji:'💀',boss:'boss1',isle:1},
+ {id:'boss2bait',tier:1,n:'طعمه‌ی اژدهای طلایی',bite:[1.2,2.2],p:4000,emoji:'☠️',boss:'boss2',isle:2}
+];
+const BAIT_BY={};BAITS.forEach(b=>BAIT_BY[b.id]=b);
+function getBait(){return BAIT_BY[S.equippedBait]||BAITS[0];}
 // قلاب: ten = ضریب فشار نخ (کمتر = بهتر)، rare = شانس اضافه ماهی نایاب، win = مهلت کشیدن بعد از نیش (ثانیه)
 const HOOK=[null,{n:'قلاب ساده',ten:1,rare:0,win:1.1},{n:'قلاب فولادی',ten:.9,rare:.02,win:1.25},{n:'قلاب خاردار',ten:.82,rare:.04,win:1.4},
  {n:'قلاب تیتانیومی',ten:.74,rare:.07,win:1.55},{n:'قلاب مرجانی',ten:.66,rare:.10,win:1.7},{n:'قلاب طلایی افسانه‌ای',ten:.58,rare:.14,win:1.9}];
@@ -972,21 +1032,24 @@ const FISH=[
  {id:'mackerel',name:'خال‌مخالی',price:18,hp:3,pull:.7,size:.65,color:0x3f7dd1,belly:0xdfe9f5,shape:[1.6,.55,.38]},
  {id:'puffer',name:'بادکنک‌ماهی',price:40,hp:5,pull:.85,size:.6,color:0xe8c04a,belly:0xfff3c4,shape:[1,.95,.95],spikes:true},
  {id:'tuna',name:'ماهی تن',price:70,hp:8,pull:1.1,size:1,color:0x2a4d8f,belly:0xdde6f2,shape:[1.7,.7,.5]},
- {id:'piranha',name:'پیرانا',price:95,hp:7,pull:1.3,size:.75,color:0x8a3b2e,belly:0xff7a3a,shape:[1.15,.85,.35]},
- {id:'blueshark',name:'کوسه آبی',price:230,hp:18,pull:1.9,size:1.4,color:0x4a78b8,belly:0xe8eef6,shape:[2.2,.6,.5],shark:true},
- {id:'goblin',name:'کوسه گابلین',price:520,hp:28,pull:2.4,size:1.5,color:0xd98aa5,belly:0xfff0f5,shape:[2.2,.55,.5],shark:true,snout:true},
- {id:'oldpike',name:'پیک پیر (غول دریاچه)',price:1400,hp:45,pull:3.1,size:1.7,color:0x4b6b3a,belly:0xc7d58a,shape:[2.6,.45,.4],snout:true},
+ {id:'piranha',name:'پیرانا',price:95,hp:7,pull:1.3,size:.75,color:0x8a3b2e,belly:0xff7a3a,shape:[1.15,.85,.35],danger:true,dmg:4,atk:2.8},
+ {id:'blueshark',name:'کوسه آبی',price:230,hp:18,pull:1.9,size:1.4,color:0x4a78b8,belly:0xe8eef6,shape:[2.2,.6,.5],shark:true,danger:true,dmg:5,atk:2.6},
+ {id:'goblin',name:'کوسه گابلین',price:520,hp:28,pull:2.4,size:1.5,color:0xd98aa5,belly:0xfff0f5,shape:[2.2,.55,.5],shark:true,snout:true,danger:true,dmg:6,atk:2.5},
+ {id:'oldpike',name:'پیک پیر (غول دریاچه)',price:1400,hp:45,pull:3.1,size:1.7,color:0x4b6b3a,belly:0xc7d58a,shape:[2.6,.45,.4],snout:true,danger:true,dmg:7,atk:2.4},
  {id:'moonfish',name:'ماهی مهتابی',price:900,hp:34,pull:2.7,size:1.35,color:0xbfe8ff,belly:0xffffff,shape:[1.9,.75,.55]},
- {id:'leviathan',name:'لویاتان جزیره طلایی',price:3600,hp:62,pull:3.8,size:2.1,color:0x1c8a5e,belly:0xdfffe0,shape:[2.9,.6,.55],snout:true,shark:true},
+ {id:'leviathan',name:'لویاتان جزیره طلایی',price:3600,hp:62,pull:3.8,size:2.1,color:0x1c8a5e,belly:0xdfffe0,shape:[2.9,.6,.55],snout:true,shark:true,danger:true,dmg:9,atk:2.3},
+ // ---- باس فایت‌ها (فقط با طعمه‌ی مخصوص گیر می‌افتن) ----
+ {id:'boss1',name:'هیولای اسکله (باس فایت)',price:2200,hp:70,pull:3.4,size:2.4,color:0x1f3d1f,belly:0x8fae6e,shape:[3.0,.8,.6],shark:true,snout:true,boss:true,danger:true,dmg:14,atk:1.6},
+ {id:'boss2',name:'اژدهای طلایی (باس نهایی)',price:9000,hp:160,pull:5.2,size:3.2,color:0xffb02e,belly:0xfff2c0,shape:[3.6,.75,.65],shark:true,snout:true,boss:true,danger:true,dmg:24,atk:1.0},
  // ---- ماهی‌های جدید جزیره طلایی (سطح ۱ تا ۸) ----
  {id:'coralfish',lvl:1,name:'ماهی مرجانی (سطح ۱)',price:120,hp:6,pull:.9,size:.7,color:0xff8a5c,belly:0xffe0c2,shape:[1.3,.9,.4]},
  {id:'eel',lvl:2,name:'مارماهی برقی (سطح ۲)',price:260,hp:12,pull:1.5,size:1.2,color:0x6b8f3a,belly:0xf2e96b,shape:[3.0,.3,.3]},
  {id:'sailfish',lvl:3,name:'ماهی بادبانی (سطح ۳)',price:480,hp:20,pull:2.1,size:1.4,color:0x2f6fb5,belly:0xe8f4ff,shape:[2.6,.5,.35],snout:true},
  {id:'manta',lvl:4,name:'سفره‌ماهی غول‌پیکر (سطح ۴)',price:760,hp:28,pull:2.4,size:1.4,color:0x3b3f6b,belly:0xf0f0ff,shape:[1.6,.28,2.2]},
- {id:'hammer',lvl:5,name:'کوسه چکشی (سطح ۵)',price:1150,hp:38,pull:2.9,size:1.6,color:0x7a8794,belly:0xf5f5f5,shape:[2.3,.55,.6],shark:true,hammer:true},
- {id:'fireswordfish',lvl:6,name:'ماهی شمشیری آتشین (سطح ۶)',price:1900,hp:50,pull:3.3,size:1.8,color:0xd9481f,belly:0xffd9a0,shape:[2.8,.5,.45],snout:true},
- {id:'greatwhite',lvl:7,name:'کوسه سفید بزرگ (سطح ۷)',price:3000,hp:72,pull:3.8,size:2.3,color:0x9aa7b3,belly:0xffffff,shape:[3.0,.7,.6],shark:true},
- {id:'seadragon',lvl:8,name:'اژدهای دریایی افسانه‌ای (سطح ۸)',price:6500,hp:115,pull:4.6,size:2.6,color:0x7a2bd6,belly:0xffd3ff,shape:[3.2,.6,.6],snout:true,shark:true}
+ {id:'hammer',lvl:5,name:'کوسه چکشی (سطح ۵)',price:1150,hp:38,pull:2.9,size:1.6,color:0x7a8794,belly:0xf5f5f5,shape:[2.3,.55,.6],shark:true,hammer:true,danger:true,dmg:8,atk:2.3},
+ {id:'fireswordfish',lvl:6,name:'ماهی شمشیری آتشین (سطح ۶)',price:1900,hp:50,pull:3.3,size:1.8,color:0xd9481f,belly:0xffd9a0,shape:[2.8,.5,.45],snout:true,danger:true,dmg:9,atk:2.2},
+ {id:'greatwhite',lvl:7,name:'کوسه سفید بزرگ (سطح ۷)',price:3000,hp:72,pull:3.8,size:2.3,color:0x9aa7b3,belly:0xffffff,shape:[3.0,.7,.6],shark:true,danger:true,dmg:10,atk:2.1},
+ {id:'seadragon',lvl:8,name:'اژدهای دریایی افسانه‌ای (سطح ۸)',price:6500,hp:115,pull:4.6,size:2.6,color:0x7a2bd6,belly:0xffd3ff,shape:[3.2,.6,.6],snout:true,shark:true,danger:true,dmg:12,atk:1.9}
 ];
 const FISH_BY={};FISH.forEach(f=>FISH_BY[f.id]=f);
 const LURE_W=[null,
@@ -1067,14 +1130,30 @@ const fillL=new THREE.DirectionalLight(0x8fd8e6,.33);fillL.position.set(80,50,14
 const bounceL=new THREE.HemisphereLight(0x1aa0b0,0x000000,.18);scene.add(bounceL);
 
 // post-processing (bloom) — degrades gracefully if the CDN passes fail to load
-let composer=null,bloomPass=null;
+let composer=null,bloomPass=null,gradePass=null;
 try{
   if(typeof THREE.EffectComposer==='function'&&typeof THREE.UnrealBloomPass==='function'){
-    composer=new THREE.EffectComposer(renderer);
+    let rt=null;
+    try{const pr=renderer.getPixelRatio();
+      if(pr<2&&typeof THREE.WebGLMultisampleRenderTarget==='function'&&renderer.capabilities.isWebGL2){
+        rt=new THREE.WebGLMultisampleRenderTarget(Math.floor(innerWidth*pr),Math.floor(innerHeight*pr),{minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,format:THREE.RGBAFormat});rt.samples=4;}
+    }catch(e){rt=null;}
+    composer=rt?new THREE.EffectComposer(renderer,rt):new THREE.EffectComposer(renderer);
     composer.addPass(new THREE.RenderPass(scene,camera));
     bloomPass=new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),IS_TOUCH?.4:.55,.75,.86);
     composer.addPass(bloomPass);
-    const gammaPass=new THREE.ShaderPass(THREE.CopyShader);gammaPass.renderToScreen=true;composer.addPass(gammaPass);
+    const gradeShader={defines:{SH:IS_TOUCH?8:14},uniforms:{tDiffuse:{value:null},uTime:{value:0},uSun:{value:new THREE.Vector2(.5,.5)},uSunK:{value:0}},
+      vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
+      fragmentShader:'uniform sampler2D tDiffuse;uniform float uTime;uniform vec2 uSun;uniform float uSunK;varying vec2 vUv;float hh(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}'+
+      'void main(){vec2 c=vUv-0.5;float d2=dot(c,c);vec2 off=c*d2*0.010;'+
+      'vec3 col=vec3(texture2D(tDiffuse,vUv+off).r,texture2D(tDiffuse,vUv).g,texture2D(tDiffuse,vUv-off).b);'+
+      'if(uSunK>0.001){vec2 dv=(uSun-vUv)/float(SH);vec2 tc=vUv;float acc=0.0,w=1.0;for(int i=0;i<SH;i++){tc+=dv;vec3 s=texture2D(tDiffuse,tc).rgb;float lm=max(max(s.r,s.g),s.b);acc+=smoothstep(0.92,1.15,lm)*exp(-length(tc-uSun)*2.5)*w;w*=0.94;}col+=vec3(1.0,0.8,0.5)*acc/float(SH)*uSunK*1.1;}'+
+      'float l=dot(col,vec3(0.299,0.587,0.114));col=mix(vec3(l),col,1.10);'+
+      'col*=mix(vec3(0.95,1.0,1.06),vec3(1.05,1.0,0.94),smoothstep(0.15,0.85,l));'+
+      'vec3 cc=clamp(col,0.0,1.0);col=mix(col,cc*cc*(3.0-2.0*cc),0.22);'+
+      'col*=1.0-smoothstep(0.10,0.55,d2)*0.42;'+
+      'col+=(hh(vUv*vec2(1920.,1080.)+fract(uTime)*97.0)-0.5)*0.014;gl_FragColor=vec4(col,1.0);}'};
+    gradePass=new THREE.ShaderPass(gradeShader);gradePass.renderToScreen=true;composer.addPass(gradePass);
   }
 }catch(e){composer=null;}
 
@@ -1123,11 +1202,12 @@ try{
   }
 }catch(e){waterReflector=null;}
 function animateWater(){
+  if(GFXQ&&GFXQ.waterEvery>1){GFXQ.wf=(GFXQ.wf||0)+1;if(GFXQ.wf%GFXQ.waterEvery)return;}
   const cx=Math.round(camera.position.x/WSTEP)*WSTEP,cz=Math.round(camera.position.z/WSTEP)*WSTEP;
   water.position.set(cx,0,cz);
   if(waterReflector)waterReflector.position.set(cx,-.02,cz);
   for(let i=0;i<wPos.count;i++)wPos.setZ(i,waveH(wx[i]+cx,-wy[i]+cz,WT));wPos.needsUpdate=true;
-  if(sparkles){
+  if(sparkles&&sparkles.visible){
     const arr=sparkGeo.attributes.position.array;
     for(let i=0;i<SPARK_N;i++){
       const lx=arr[i*3],lz=arr[i*3+2],wxp=lx+cx,wzp=lz+cz;
@@ -1358,6 +1438,13 @@ bobber.add(new THREE.Mesh(new THREE.SphereGeometry(.2,44,36,0,Math.PI*2,0,Math.P
 bobber.add(new THREE.Mesh(new THREE.SphereGeometry(.2,44,36,0,Math.PI*2,Math.PI/2,Math.PI/2),M(0xffffff,dbl)));
 const ant=new THREE.Mesh(new THREE.CylinderGeometry(.02,.02,.35,36),M(0xffd23f));ant.position.y=.3;bobber.add(ant);bobberNew(bobber);
 bobber.visible=false;scene.add(bobber);
+// طعمه‌ی سوار شده روی قلاب — زیر شناور دیده می‌شه
+const baitLine=new THREE.Mesh(new THREE.CylinderGeometry(.008,.008,.32,8),M(0xdddddd));baitLine.position.y=-.16;bobber.add(baitLine);
+const baitMesh=new THREE.Mesh(new THREE.SphereGeometry(.11,16,12),M(0xffffff));baitMesh.position.y=-.34;bobber.add(baitMesh);
+const BAIT_COLOR={bread:0xd8b45a,worm:0xa85a3a,hotdog:0xc4502a,carrot:0xff8a3a,livefish:0x6fa8dc,shrimp:0xff8fa3,pearl:0xf4f4ff,boss1bait:0x2b2b2b,boss2bait:0xffd23f};
+function updateBaitVisual(){const id=S.equippedBait,c=BAIT_COLOR[id]||0xffffff;baitMesh.material.color.setHex(c);baitMesh.visible=!!id;
+  baitMesh.scale.setScalar(BAIT_BY[id]&&BAIT_BY[id].boss?1.5:1);}
+updateBaitVisual();
 const LN=24,lineGeo=new THREE.BufferGeometry();lineGeo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(LN*3),3));
 const line=new THREE.Line(lineGeo,new THREE.LineBasicMaterial({color:0xffffff}));line.frustumCulled=false;line.visible=false;scene.add(line);
 
@@ -1407,7 +1494,7 @@ function buildFishOld(def,rare){
 function spawnFish(def,rare,pos,vel){
   const m=buildFish(def,rare);m.g.position.copy(pos);scene.add(m.g);
   const f={def,rare,g:m.g,body:m.body,mat:m.mat,s:m.s,r:m.r,pos:m.g.position,vel:vel.clone(),hp:def.hp,maxHp:def.hp,
-    state:'alive',age:0,flop:.6,spin:rand(-8,8),heading:0,onGround:false,flash:0,deadAge:0,value:0,bonus:0,tricks:'',sparkT:0};
+    state:'alive',age:0,flop:.6,spin:rand(-8,8),heading:0,onGround:false,flash:0,deadAge:0,value:0,bonus:0,tricks:'',sparkT:0,nid:(MP.myId!=null?(MP.myId+1)*100000+(++NET.fc):0)};
   fishes.push(f);return f;
 }
 function removeFish(i){const f=fishes[i];scene.remove(f.g);disposeObj(f.g);fishes.splice(i,1);}
@@ -1464,12 +1551,17 @@ const input={mouse:false};
 const keys={};
 const tmp=V3(0,0,0),fwd=V3(0,0,1),tipW=V3(0,0,0);
 function pickFish(){
-  const tbl=nearIsle2(player.pos.x,player.pos.z)?LURE_W2[S.lureLv]:LURE_W[Math.min(S.lureLv,4)];let sum=0;for(const t of tbl)sum+=t[1];let r=Math.random()*sum;
+  const b=getBait();
+  if(b.boss)return FISH_BY[b.boss];
+  const tier=b.tier||1;
+  const tbl=nearIsle2(player.pos.x,player.pos.z)?LURE_W2[Math.min(tier,LURE_W2.length-1)]:LURE_W[Math.min(tier,4)];
+  let sum=0;for(const t of tbl)sum+=t[1];let r=Math.random()*sum;
   for(const t of tbl){r-=t[1];if(r<=0)return FISH_BY[t[0]];}return FISH_BY[tbl[0][0]];
 }
 function setLineVisible(v){bobber.visible=v;line.visible=v;}
 function resetRod(){R.st='idle';setLineVisible(false);$('power').classList.add('hidden');$('tension').classList.add('hidden');setStatus('');}
 function onDown(){
+  if(S.equip==='fish'){fishAction();return;}
   if(S.equip==='weapon'){attack();return;}
   if(R.st==='idle'){R.st='charging';R.power=0;R.dir=1;}
   else if(R.st==='bite')hook();
@@ -1484,7 +1576,7 @@ function cast(){
   setLineVisible(true);$('power').classList.add('hidden');SFX.cast();
 }
 function hook(){
-  R.st='fight';R.tension=12;R.oil=S.reelOil>0;if(R.oil){S.reelOil--;updateBuffHUD();}R.phase='calm';R.phaseT=rand(.5,1);R.seed=rand(0,10);
+  R.st='fight';R.tension=12;R.oil=S.reelOil>0;if(R.oil){S.reelOil--;updateBuffHUD();}R.phase='calm';R.phaseT=rand(.5,1);R.seed=rand(0,10);R.atkT=1.6;
   const d=R.def;SFX.hook();
   toast(d.pull<.9?'یه ماهی کوچیک گرفتی!':d.pull<1.5?'ماهی حسابی‌ای گیر کرده!':d.pull<2.5?'وای! خیلی سنگینه!':'یه هیولا گرفتی!!!','good');
   $('tension').classList.remove('hidden');burst(R.b,0xcff6ff,10,2,4,.7,1);
@@ -1500,7 +1592,7 @@ function landFish(){
   p.y=surfaceY(p.x,p.z)+.5;
   const d=Math.hypot(t.x-p.x,t.z-p.z),tf=clamp(.7+d*.03,.7,1.5),g=22;
   const vel=V3((t.x-p.x)/tf,(t.y-p.y)/tf+.5*g*tf,(t.z-p.z)/tf);
-  const f=spawnFish(def,rare,p,vel);f.flop=1.4;S.caught++;
+  const f=spawnFish(def,rare,p,vel);f.flop=1.4;S.caught++;netSend('lf',{u:getUsername()||'ماهیگیر',n:def.name+(rare?' نایاب':'')});
   splash(R.b);resetRod();
   toast('ماهی رو کشیدی بیرون! بکشش قبل از اینکه برگرده تو آب! ('+KEY('کلید ۲','دکمه سلاح')+')','good');
   if(S.equip==='rod')hintFlash=3;
@@ -1522,7 +1614,7 @@ function updateRod(dt){
     R.bv.y-=12*dt;R.b.addScaledVector(R.bv,dt);
     if(R.b.y<=surfaceY(R.b.x,R.b.z)+.02){
       if(overWater(R.b.x,R.b.z)){R.b.y=waveH(R.b.x,R.b.z,WT);splash(R.b);R.st='waiting';R.def=null;
-        const bt=LURE[S.lureLv].bite;R.timer=rand(bt[0],bt[1]);setStatus('صبر کن تا نیش بزنه…');}
+        const bt=getBait().bite||LURE[Math.min(getBait().tier||1,7)].bite;R.timer=rand(bt[0],bt[1]);setStatus('صبر کن تا نیش بزنه…');}
       else{R.b.y=terrainY(R.b.x,R.b.z)+.15;R.st='returning';toast('قلاب افتاد روی خشکی!');}
     }
     bobber.position.copy(R.b);
@@ -1533,7 +1625,7 @@ function updateRod(dt){
   }else if(R.st==='bite'){
     R.b.y=waveH(R.b.x,R.b.z,WT)-.25+Math.sin(WT*35)*.06;bobber.position.copy(R.b);
     R.biteT-=dt;
-    if(R.biteT<=0){toast('ماهی طعمه رو خورد و رفت!','bad');R.st='waiting';const bt=LURE[S.lureLv].bite;R.timer=rand(bt[0],bt[1]);setStatus('صبر کن تا نیش بزنه…');}
+    if(R.biteT<=0){toast('ماهی طعمه رو خورد و رفت!','bad');R.st='waiting';const bt=getBait().bite||LURE[Math.min(getBait().tier||1,7)].bite;R.timer=rand(bt[0],bt[1]);setStatus('صبر کن تا نیش بزنه…');}
   }else if(R.st==='returning'){
     const dx=player.pos.x-R.b.x,dz=player.pos.z-R.b.z,d=Math.hypot(dx,dz);
     if(d<2.5){resetRod();}
@@ -1545,6 +1637,16 @@ function updateRod(dt){
       else{R.phase='calm';R.phaseT=rand(.8,1.8);}
     }
     const th=R.phase==='thrash',reeling=input.mouse;
+    if(def.danger&&th&&!S.fainted){
+      R.atkT-=dt;
+      if(R.atkT<=0){
+        const dmg=def.dmg||5;S.health=Math.max(0,S.health-dmg);shake=Math.max(shake,.32);
+        toast(def.name+' بهت حمله کرد! −'+fa(dmg)+' جان','bad');
+        burst(camera.position.clone().addScaledVector(fwd,1.4),0xff2a2a,10,2.2,2,.4,.9);SFX.hit();
+        R.atkT=def.atk||2.6;updateVitals();
+        if(S.health<=0){loseFish('بیهوش شدی و ماهی فرار کرد!');faint();return;}
+      }
+    }
     const tm=HOOK[S.hookLv].ten*(R.oil?.6:1);
     let dT=0;if(reeling)dT+=16*def.pull/rl.str*tm;if(th)dT+=22*def.pull/rl.str*tm;if(!reeling)dT-=24;
     R.tension=clamp(R.tension+dT*dt,0,100);
@@ -1589,7 +1691,7 @@ function attack(){
   camera.getWorldDirection(fwd);
   if(w.ranged){SFX.gun();shake=w.auto?.05:.16;burst(camera.position.clone().addScaledVector(fwd,1.2),0xffd23f,6,1.5,1.5,.15,1.2);}else SFX.swing();
   let best=null,bt=1e9,kind=null;
-  for(const f of fishes){if(f.state!=='alive')continue;tmp.copy(f.pos).sub(camera.position);const t=tmp.dot(fwd);if(t<.1||t>w.range)continue;
+  for(const f of fishes.concat(ghostList())){if(f.state!=='alive')continue;tmp.copy(f.pos).sub(camera.position);const t=tmp.dot(fwd);if(t<.1||t>w.range)continue;
     const perp=Math.sqrt(Math.max(0,tmp.lengthSq()-t*t)),rad=f.def.size*.55+(w.ranged?.55:.9);
     if(perp<rad&&t<bt){best=f;bt=t;kind='fish';}}
   if(gull.st!=='away'){tmp.copy(gull.pos).sub(camera.position);const t=tmp.dot(fwd);
@@ -1597,9 +1699,11 @@ function attack(){
   if(!best)return;
   if(kind==='fish')hitFish(best,w,bt);else hitGull(w.dmg);
 }
-function hitFish(f,w,dist){
+function hitFish(f,w,dist,dx,dz){
+  if(f.ghost){netSend('fh',{n:f.nid,d:w.dmg,r:w.ranged?1:0,ds:Math.round(dist||0),x:+fwd.x.toFixed(2),z:+fwd.z.toFixed(2)});f.flash=.15;SFX.hit();burst(f.pos,f.def.color,8,3,4,.6,1);return;}
+  const ax=dx===undefined?fwd.x:dx,az=dz===undefined?fwd.z:dz;
   f.hp-=w.dmg;f.flash=.15;SFX.hit();burst(f.pos,f.def.color,8,3,4,.6,1);
-  f.vel.x+=fwd.x*(w.ranged?2:3);f.vel.z+=fwd.z*(w.ranged?2:3);f.vel.y=Math.max(f.vel.y,w.ranged?3:5.5);f.flop=Math.max(f.flop,.7);
+  f.vel.x+=ax*(w.ranged?2:3);f.vel.z+=az*(w.ranged?2:3);f.vel.y=Math.max(f.vel.y,w.ranged?3:5.5);f.flop=Math.max(f.flop,.7);
   if(f.hp<=0)killFish(f,w.ranged,dist);
 }
 
@@ -1615,7 +1719,8 @@ const gull={g:new THREE.Group(),pos:V3(0,20,0),cx:0,cz:0,st:'away',t:25,ang:0,tg
   gull.g.add(gull.wl);gull.g.add(gull.wr);gull.g.scale.setScalar(1.6);gull.g.visible=false;scene.add(gull.g);gullNew(gull);
 })();
 function gullFace(dx,dz){gull.g.rotation.y=Math.atan2(-dz,dx);}
-function hitGull(dmg){
+function hitGull(dmg,fromNet){
+  if(!fromNet&&!isGullOwner()){netSend('gh',{d:dmg});SFX.hit();burst(gull.pos,0xffffff,10,3,4,.9,1.2);return;}
   gull.hp-=dmg;SFX.hit();burst(gull.pos,0xffffff,10,3,4,.9,1.2);
   if(gull.hp<=0){
     if(gull.carry){const f=gull.carry;f.state='dead';f.pos.copy(gull.pos);f.vel.set(0,0,0);f.g.visible=true;gull.carry=null;}
@@ -1693,6 +1798,13 @@ function updatePlayer(dt){
 
 /* ============ world animation ============ */
 function updateWorld(dt){
+  if(!S.fainted){
+    S.hunger=Math.max(0,S.hunger-dt*(100/420));
+    if(S.hunger<=0)S.health=Math.max(0,S.health-dt*(100/90));
+    else if(S.hunger>60&&S.health<S.maxHealth)S.health=Math.min(S.maxHealth,S.health+dt*1.4);
+    if(S.health<=0)faint();
+  }
+  updateVitals();
   if(S.energyT>0)S.energyT=Math.max(0,S.energyT-dt);
   if(!S.visitedIsle2&&Math.hypot(player.pos.x-ISLE2.x,player.pos.z-ISLE2.z)<26){S.visitedIsle2=true;toast('به جزیره طلایی رسیدی! اینجا ماهی‌های کمیاب‌تر و گرون‌تری پیدا می‌شن.','good');SFX.win();}
   animateWater();UT.value+=dt;
@@ -1727,8 +1839,41 @@ function updateHUD(){
   $('coolerV').textContent=fa(S.inv.length)+'/'+fa(COOLER[S.coolerLv]);
   $('goalFill').style.width=Math.min(100,S.money/BOAT*100)+'%';
   shaftMat.color.setHex(ROD_COL[S.rodLv]);
+  renderInvBar();
 }
-function nearestDead(){let best=null,bd=3.4;for(const f of fishes){if(f.state!=='dead')continue;const d=Math.hypot(f.pos.x-player.pos.x,f.pos.z-player.pos.z);if(d<bd){bd=d;best=f;}}return best;}
+function updateVitals(){
+  $('healthFill').style.width=Math.max(0,S.health)+'%';
+  $('healthV').textContent=fa(Math.round(S.health));
+  $('hungerFill').style.width=Math.max(0,S.hunger)+'%';
+  $('hungerV').textContent=fa(Math.round(S.hunger));
+}
+function faint(){
+  if(S.fainted)return;S.fainted=true;
+  const loss=Math.round(S.money*.15);S.money=Math.max(0,S.money-loss);S.inv=[];
+  S.health=45;S.hunger=45;resetRod();
+  toast('از گشنگی و آسیب بیهوش شدی! کمی پول و ماهی‌هات رو از دست دادی...','bad');
+  player.pos.set(0,terrainY(0,12)+.2,12);player.vx=0;player.vz=0;player.vy=0;
+  updateHUD();
+  setTimeout(()=>{S.fainted=false;},2200);
+}
+const WEAPON_EMOJI=['👊','🏏','🪓','🔫','🔫','🔫','🔱','💣'];
+function eatFish(i){
+  const f=S.inv[i];if(!f)return;
+  S.inv.splice(i,1);
+  const gain=f.def.boss?60:28;
+  S.hunger=Math.min(S.maxHunger,S.hunger+gain);
+  S.health=Math.min(S.maxHealth,S.health+Math.round(gain*.35));
+  SFX.tick();toast('خوردیش: '+f.def.name+' — سیری +'+fa(gain),'good');
+  updateVitals();updateHUD();
+}
+$('invbar').addEventListener('click',e=>{
+  const el=e.target.closest('[data-a]');if(!el||!running())return;const a=el.dataset.a;
+  if(a==='equiprod')equip('rod');
+  else if(a==='equipweap')equip('weapon');
+  else if(a==='equipbait'){S.equippedBait=el.dataset.id;updateBaitVisual();renderInvBar();}
+  else if(a==='holdfish')holdFish(+el.dataset.i);
+});
+function nearestDead(){let best=null,bd=3.4;for(const f of fishes.concat(ghostList())){if(f.state!=='dead')continue;const d=Math.hypot(f.pos.x-player.pos.x,f.pos.z-player.pos.z);if(d<bd){bd=d;best=f;}}return best;}
 function shopWhere(){
   if(Math.hypot(player.pos.x-SHOP_POS.x,player.pos.z-SHOP_POS.z)<4.5)return 1;
   if(Math.hypot(player.pos.x-SHOP_POS2.x,player.pos.z-SHOP_POS2.z)<4.5)return 2;
@@ -1742,6 +1887,7 @@ function updateHint(){
   if(player.onBoat)h=KEY('E — پیاده شدن نزدیک اسکله','دکمه پیاده‌شدن نزدیک اسکله');
   else if(nearBoat()&&S.boatRepaired)h=KEY('E — سوار قایق شو و برو جزیره طلایی','سوار قایق شو');
   else if(dead)h=KEY('E — ','')+`برداشتن ${dead.def.name}${dead.rare?' (نایاب)':''}`;
+  else if(S.equip==='fish'&&heldFish()){const hf=heldFish();h=nearShop()?KEY('کلیک = فروختن ('+fa(hf.value)+' $)','دکمه قرمز = فروختن'):KEY('کلیک = خوردن • F = ماهی بعدی','دکمه قرمز = خوردن');}
   else if(nearShop())h=KEY('E — ورود به فروشگاه','فروشگاه رو بزن');
   else if(S.equip==='weapon'){h=WEAPON[S.weaponLv].auto?KEY('نگه‌داشتن کلیک = رگبار • ۱ = چوب ماهیگیری','نگه‌دار = رگبار'):WEAPON[S.weaponLv].ranged?KEY('کلیک = شلیک','بزن = شلیک'):KEY('کلیک = ضربه • ۱ = چوب ماهیگیری','بزن = ضربه');}
   else if(R.st==='idle')h=fishes.some(f=>f.state==='alive')?KEY('ماهی داره تقلا می‌کنه! کلید ۲ = سلاح','ماهی تقلا می‌کنه! سلاح رو بردار'):KEY('نگه‌داشتن کلیک = شارژ پرتاب • رها کردن = پرتاب','نگه‌دار = شارژ • رها کن = پرتاب');
@@ -1752,19 +1898,20 @@ function updateHint(){
   // target
   let t='';
   if(S.equip==='weapon'){let best=null,bt=1e9;camera.getWorldDirection(fwd);
-    for(const f of fishes){if(f.state!=='alive')continue;tmp.copy(f.pos).sub(camera.position);const d=tmp.dot(fwd);if(d<.1||d>60)continue;
+    for(const f of fishes.concat(ghostList())){if(f.state!=='alive')continue;tmp.copy(f.pos).sub(camera.position);const d=tmp.dot(fwd);if(d<.1||d>60)continue;
       const perp=Math.sqrt(Math.max(0,tmp.lengthSq()-d*d));if(perp<f.def.size+.8&&d<bt){bt=d;best=f;}}
     if(best){const n=Math.max(0,Math.ceil(best.hp/best.maxHp*6));t=best.def.name+' '+'▮'.repeat(n)+'▯'.repeat(6-n);}}
   if(t!==lastTarget){$('target').textContent=t;lastTarget=t;}
   if(IS_TOUCH){
-    let lab;
-    if(S.equip==='weapon')lab=WEAPON[S.weaponLv].ranged?'شلیک':'ضربه';
+    let lab,sub='';
+    if(S.equip==='fish'&&heldFish()){const hf=heldFish();if(nearShop()){lab='فروختن';sub=fa(hf.value)+' $';}else lab='خوردن';}
+    else if(S.equip==='weapon')lab=WEAPON[S.weaponLv].ranged?'شلیک':'ضربه';
     else if(R.st==='idle'||R.st==='charging')lab='پرتاب';
     else if(R.st==='waiting')lab='جمع کن';
     else if(R.st==='bite')lab='بکش!';
     else if(R.st==='fight')lab='قرقره';
     else lab='…';
-    if(lab!==lastAct){$('bAct').textContent=lab;lastAct=lab;}
+    if(lab+sub!==lastAct){if(sub)$('bAct').innerHTML=lab+'<small>'+sub+'</small>';else $('bAct').textContent=lab;lastAct=lab+sub;}
     const tl=S.equip==='rod'?'سلاح':'چوب';if(tl!==lastTool){$('bTool').textContent=tl;lastTool=tl;}
     const be=$('bE'),show=!!(dead||nearShop()||player.onBoat||(nearBoat()&&S.boatRepaired));be.classList.toggle('hidden',!show);
     const et=player.onBoat?'پیاده شو':(nearBoat()&&S.boatRepaired)?'سوار شو':dead?'بردار':'فروشگاه';if(et!==lastE){be.textContent=et;lastE=et;}
@@ -1778,6 +1925,7 @@ function interact(){
   const dead=nearestDead();
   if(dead){
     if(S.inv.length>=COOLER[S.coolerLv]){toast('یخدانت پره! برو بفروش یا ارتقاش بده.','bad');return;}
+    if(dead.ghost){if(NET.pending)return;NET.pending=dead.nid;NET.pendT=1.5;netSend('fp',{n:dead.nid,to:dead.owner});SFX.tick();return;}
     const i=fishes.indexOf(dead);S.inv.push({def:dead.def,rare:dead.rare,value:dead.value,tricks:dead.tricks});removeFish(i);SFX.tick();
     toast(`${dead.def.name} توی یخدان رفت.`);updateHUD();return;
   }
@@ -1812,6 +1960,13 @@ function renderShop(){
     return up(a,title,d,can?t.pr[lv+1]:0,can);
   };
   const prods=two?`<h2 style="margin-top:16px">محصولات ویژه جزیره طلایی</h2>`+PRODUCTS.map(p=>`<div class="row"><span>${p.n}<small>${p.d}</small></span><button class="btn sm ${S.money>=p.p?'gold':''}" data-a="prod" data-id="${p.id}" ${S.money>=p.p?'':'disabled'}>${fa(p.p)} $</button></div>`).join(''):`<p class="muted" style="font-size:13px;margin-top:10px">🏝️ محصولات ویژه و تجهیزات سطح بالا فقط توی فروشگاه جزیره طلایی هست.</p>`;
+  const baitCap=two?7:4;
+  const baits=BAITS.filter(b=>!b.isle||b.isle===S.shopIsle).filter(b=>b.boss||b.tier<=baitCap).map(b=>{
+    const owned=!!S.baits[b.id],eq=S.equippedBait===b.id,ok=owned||S.money>=b.p;
+    const lab=owned?(eq?'✓ سوار شده':'سوارش کن'):(fa(b.p)+' $');
+    return `<div class="row"><span>${b.emoji} ${b.n}${b.boss?'<small>طعمه‌ی ویژه‌ی باس فایت — گرون ولی لازمه</small>':''}</span><button class="btn sm ${owned?(eq?'':'teal'):(ok?'gold':'')}" data-a="bait" data-id="${b.id}" ${(owned&&eq)||!ok?'disabled':''}>${lab}</button></div>`;
+  }).join('');
+  const baitSec=`<h2 style="margin-top:18px">طعمه‌ها (جدا جدا بخر، از اینونتوری پایین انتخاب کن)</h2>${baits}`;
   $('shopCard').innerHTML=`
   <div class="shophead"><h2>${two?'فروشگاه جزیره طلایی':'فروشگاه جزیره'}</h2><b style="font-size:22px">موجودی: ${fa(S.money)} $</b></div>
   <div class="grid2">
@@ -1825,26 +1980,34 @@ function renderShop(){
     </div>
     <div>
       <h2>ارتقا</h2>
-      ${row('rod')}${row('lure')}${row('hook')}${row('weapon')}${row('cooler')}
-      <div class="row" style="margin-top:8px"><span><b>تعمیر قایق</b><small>${S.boatRepaired?'تعمیر شده! نزدیکش شو و E بزن تا بری جزیره طلایی':'با قایق می‌تونی به جزیره طلایی بری؛ ماهی‌های بزرگ‌تر و گرون‌تر اونجان'}</small></span><button class="btn sm" data-a="boat" ${(!S.boatRepaired&&S.money>=BOAT)?'':'disabled'}>${S.boatRepaired?'✓':fa(BOAT)+' $'}</button></div>
+      ${row('rod')}${row('hook')}${row('weapon')}${row('cooler')}
+      <div class="row" style="margin-top:8px"><span><b>تعمیر قایق</b>${S.hasBoatKey?'<small>🔑 با کلید باس فایت رایگان باز شد!</small>':'<small>'+(S.boatRepaired?'تعمیر شده! نزدیکش شو و E بزن تا بری جزیره طلایی':'با قایق می‌تونی به جزیره طلایی بری؛ یا کلیدشو با کشتن و فروختن باس فایت جزیره اول به‌دست بیار')+'</small>'}</span><button class="btn sm" data-a="boat" ${(!S.boatRepaired&&S.money>=BOAT)?'':'disabled'}>${S.boatRepaired?'✓':fa(BOAT)+' $'}</button></div>
       ${prods}
     </div>
   </div>
+  <div style="margin-top:6px">${baitSec}</div>
   <div class="center" style="margin-top:18px"><button class="btn teal" data-a="close">برگرد سر ماهیگیری</button></div>`;
 }
 $('shopCard').addEventListener('click',e=>{
   const b=e.target.closest('[data-a]');if(!b||b.disabled)return;const a=b.dataset.a,v=+b.dataset.v||0;
   if(a==='close'){closeShop();return;}
-  if(a==='sell'){const t=S.inv.reduce((x,f)=>x+f.value,0);S.money+=t;S.earned+=t;S.inv=[];SFX.coin();toast(`فروختی! +${fa(t)} $`,'good');submitScore();}
+  if(a==='sell'){
+    const hasBoss1=S.inv.some(f=>f.def.id==='boss1'),hasBoss2=S.inv.some(f=>f.def.id==='boss2');
+    const t=S.inv.reduce((x,f)=>x+f.value,0);S.money+=t;S.earned+=t;S.inv=[];SFX.coin();toast(`فروختی! +${fa(t)} $`,'good');submitScore();
+    if(hasBoss1&&!S.hasBoatKey){S.hasBoatKey=true;toast('🔑 کلید قایق رو از باس فایت گرفتی! قایق رایگان تعمیر شد.','good');if(!S.boatRepaired){S.boatRepaired=true;repairBoatVisual();netSend('brep',{});}}
+    if(hasBoss2){toast('اژدهای طلایی رو شکست دادی! بازی تموم شد!','good');setTimeout(()=>win(true),700);}
+  }
   else if(TRK[a]){const t=TRK[a],lv=S[t.k];if(lv<shopCaps()[a]&&S.money>=t.pr[lv+1]){S.money-=t.pr[lv+1];S[t.k]++;SFX.coin();toast(t.msg+t.nm(S[t.k]),'good');}}
   else if(a==='prod'){const p=PRODUCTS.find(x=>x.id===b.dataset.id);if(p&&S.shopIsle===2&&S.money>=p.p){S.money-=p.p;p.buy();SFX.coin();toast('خریدی: '+p.n,'good');}}
+  else if(a==='bait'){const bd=BAIT_BY[b.dataset.id];if(bd){if(S.baits[bd.id]){S.equippedBait=bd.id;updateBaitVisual();toast('طعمه‌ی سوار شده: '+bd.n);}else if(S.money>=bd.p){if(bd.p>0)S.money-=bd.p;S.baits[bd.id]=true;S.equippedBait=bd.id;updateBaitVisual();SFX.coin();toast('طعمه خریدی: '+bd.n,'good');}}}
   else if(a==='bet'&&S.money>=v){if(Math.random()<.47){S.money+=v;S.earned+=v;S.lastBet=`بردی! +${fa(v)} $`;SFX.coin();}else{S.money-=v;S.lastBet=`باختی! −${fa(v)} $`;SFX.lose();}}
-  else if(a==='boat'&&!S.boatRepaired&&S.money>=BOAT){S.money-=BOAT;S.boatRepaired=true;repairBoatVisual();SFX.win();toast('قایق تعمیر شد! نزدیکش شو و E بزن تا سوار بشی و بری جزیره طلایی.','good');}
+  else if(a==='boat'&&!S.boatRepaired&&S.money>=BOAT){S.money-=BOAT;S.boatRepaired=true;repairBoatVisual();netSend('brep',{});SFX.win();toast('قایق تعمیر شد! نزدیکش شو و E بزن تا سوار بشی و بری جزیره طلایی.','good');}
   updateHUD();renderShop();
 });
 function repairBoatVisual(){if(boat.userData.wreck)boat.userData.wreck.visible=false;stripe.material.color.setHex(0x2fa552);hull.material.color.setHex(0xffffff);boat.rotation.set(0,boatState.yaw,0);}
 function nearBoat(){return Math.hypot(player.pos.x-boatState.x,player.pos.z-boatState.z)<4.5;}
 function tryBoard(){
+  if(NET.boatBy!=null){toast('یکی از دوستات داره با قایق می‌رونه!','bad');return;}
   if(!S.boatRepaired){toast('قایق هنوز خرابه. برو تو فروشگاه تعمیرش کن.','bad');return;}
   player.onBoat=true;resetRod();S.equip='rod';
   player.pos.set(boatState.x,surfaceY(boatState.x,boatState.z)+1.2,boatState.z);
@@ -1855,10 +2018,10 @@ function tryDisembark(){
   if(Math.hypot(player.pos.x,player.pos.z)>SHORE+2&&Math.hypot(player.pos.x-ISLE2.x,player.pos.z-ISLE2.z)>SHORE+2){toast('باید نزدیک یه اسکله باشی تا پیاده شی!','bad');return;}
   player.onBoat=false;const gh=terrainY(player.pos.x,player.pos.z);player.pos.y=gh;player.vy=0;player.vx=0;player.vz=0;
 }
-function win(){
+function win(bossWin){
   S.won=true;S.shop=false;$('shop').classList.add('hidden');try{document.exitPointerLock();}catch(e){}SFX.win();
   const m=Math.floor(S.time/60),s=Math.floor(S.time%60);
-  $('endText').textContent=`قایق رو تعمیر کردی و از جزیره رفتی! زمان: ${fa(m)} دقیقه و ${fa(s)} ثانیه • ماهی‌های گرفته‌شده: ${fa(S.caught)} • کل درآمد: ${fa(S.earned)} $`;
+  $('endText').textContent=(bossWin?'اژدهای طلایی افسانه‌ای رو شکست دادی و بازی رو تموم کردی! 🏆':'قایق رو تعمیر کردی و از جزیره رفتی!')+` زمان: ${fa(m)} دقیقه و ${fa(s)} ثانیه • ماهی‌های گرفته‌شده: ${fa(S.caught)} • کل درآمد: ${fa(S.earned)} $`;
   $('end').classList.remove('hidden');
 }
 
@@ -1866,6 +2029,7 @@ function win(){
 const UNAME_KEY='htfUsername';
 function getUsername(){return localStorage.getItem(UNAME_KEY)||'';}
 function setUsername(v){try{localStorage.setItem(UNAME_KEY,v);}catch(e){}}
+const NET={n:0,last:{},ghosts:new Map(),applying:false,synced:false,boatBy:null,boatT:null,gs:null,bt:0,gt:0,ft:0,hadFish:false,wasOnBoat:false,fc:0,pending:null,pendT:0,eqKey:'',eqT:0,eqPending:{}};
 const MP={ws:null,room:null,myId:null,max:8,connected:false};
 const remotePlayers=new Map();
 function remoteMat(hue){return new THREE.MeshStandardMaterial({color:new THREE.Color().setHSL(hue,.62,.52),flatShading:true,roughness:.8});}
@@ -1884,12 +2048,12 @@ function addRemote(id,name){
   scene.add(g);
   remotePlayers.set(id,{g,x:player.pos.x,y:1,z:player.pos.z,yaw:0,tx:player.pos.x,ty:1,tz:player.pos.z,tyaw:0});
 }
-function removeRemote(id){const r=remotePlayers.get(id);if(r){scene.remove(r.g);remotePlayers.delete(id);}}
+function removeRemote(id){const r=remotePlayers.get(id);if(r){scene.remove(r.g);remotePlayers.delete(id);}if(NET.boatBy===id)NET.boatBy=null;delete NET.last[id];delete NET.eqPending[id];dropGhosts(id);}
 function updateRemotes(dt){
   remotePlayers.forEach(r=>{
     r.x=lerp(r.x,r.tx,1-Math.exp(-10*dt));r.y=lerp(r.y,r.ty,1-Math.exp(-10*dt));r.z=lerp(r.z,r.tz,1-Math.exp(-10*dt));
     let dy=r.tyaw-r.yaw;while(dy>Math.PI)dy-=6.283;while(dy<-Math.PI)dy+=6.283;r.yaw+=dy*Math.min(1,10*dt);
-    r.g.position.set(r.x,r.y,r.z);r.g.rotation.y=r.yaw;
+    r.g.position.set(r.x,r.y,r.z);r.g.rotation.y=r.yaw+Math.PI;
   });
 }
 function updateMPHud(count,max){$('mpHud').classList.remove('hidden');$('mpHudV').textContent=fa(count)+'/'+fa(max)+(MP.room?' • کد: '+MP.room:'');}
@@ -1906,11 +2070,12 @@ function mpConnect(onOpen){
     if(m.type==='hosted'){MP.room=m.code;MP.myId=m.playerId;$('mpStatus').textContent='کد اتاق: '+m.code+' — این کد رو به دوستات بده!';updateMPHud(1,MP.max);beginMPPlay();}
     else if(m.type==='joined'){MP.myId=m.playerId;MP.max=m.max;MP.room=$('mpCode').value.trim().toUpperCase();$('mpStatus').textContent='وارد اتاق شدی، منتظر بقیه...';updateMPHud(m.count,m.max);beginMPPlay();}
     else if(m.type==='error'){$('mpStatus').textContent=m.reason==='not-found'?'کد اتاق پیدا نشد.':'اتاق پره!';}
-    else if(m.type==='playerJoined'){toast('یه دوست به بازی پیوست! ('+m.count+'/'+m.max+')','good');updateMPHud(m.count,m.max);addRemote(m.playerId,'بازیکن '+(m.playerId+1));}
+    else if(m.type==='playerJoined'){toast('یه دوست به بازی پیوست! ('+m.count+'/'+m.max+')','good');updateMPHud(m.count,m.max);addRemote(m.playerId,'بازیکن '+(m.playerId+1));if(isGullOwner())setTimeout(netSendSync,700);}
     else if(m.type==='playerLeft'){toast('یکی از دوستات از بازی رفت.','bad');removeRemote(m.playerId);}
     else if(m.type==='start'){toast('بازی چندنفره شروع شد! برید بگردید و ماهی بگیرید 🎣','good');m.players.forEach(pid=>{if(pid!==MP.myId)addRemote(pid,'بازیکن '+(pid+1));});}
     else if(m.type==='state'){const r=remotePlayers.get(m.from);if(r){r.tx=m.x;r.ty=m.y;r.tz=m.z;r.tyaw=m.yaw;}else addRemote(m.from,'بازیکن '+(m.from+1));}
-    else if(m.type==='catch'){toast(`${m.name} یک ${m.fish} گرفت! (+${fa(m.value)} $)`,'good');}
+    else if(m.type==='catch'){if(typeof m.name==='string'&&m.name.slice(0,2)==='@@')netRecv(m.name.slice(2));else toast(`${m.name} یک ${m.fish} گرفت! (+${fa(m.value)} $)`,'good');}
+    else if(m.type==='net'){netRecv(m.p);}
   };
 }
 function beginMPPlay(){
@@ -1958,7 +2123,7 @@ function showPause(){if(!S.started||S.won||S.shop)return;S.paused=true;input.mou
 document.addEventListener('pointerlockerror',onLockFail);
 document.addEventListener('pointerlockchange',()=>{
   if(document.pointerLockElement===canvas){S.everLocked=true;S.noLock=false;S.paused=false;$('pause').classList.add('hidden');}
-  else if(S.started&&!S.shop&&!S.won&&!S.noLock)showPause();
+  else if(S.started&&!S.shop&&!S.won&&!S.noLock&&!GFX.gfxOnline)showPause();
 });
 $('startBtn').onclick=()=>{ac();if(IS_TOUCH){S.noLock=true;goFull();}S.started=true;S.paused=false;$('menu').classList.add('hidden');$('hud').classList.remove('hidden');requestLock();updateHUD();
   toast('برو سمت اسکله (جلوت) و قلاب بنداز!');};
@@ -1993,6 +2158,7 @@ document.addEventListener('keydown',e=>{
   if(!running())return;
   if(e.code==='Digit1')equip('rod');
   else if(e.code==='Digit2')equip('weapon');
+  else if(e.code==='KeyF'){if(!S.inv.length)toast('یخدانت خالیه!','bad');else if(S.equip==='fish'&&S.inv.length>1)holdFish((S.inv.indexOf(S.heldRef)+1)%S.inv.length);else holdFish(S.equip==='fish'?S.inv.indexOf(S.heldRef):0);}
   else if(e.code==='KeyE')interact();
   else if(e.code==='KeyK'){S.money+=500;updateHUD();toast('+۵۰۰ $ (کد تقلب!)');}
 });
@@ -2040,6 +2206,553 @@ const TJ={x:0,y:0,sprint:false,id:null},TL={id:null,x:0,y:0};
   document.addEventListener('contextmenu',e=>e.preventDefault());
 })();
 
+/* ================= GRAPHICS+ PASS (sky v2 · water v2 · dust · lens flare · grade) ================= */
+var GFXQ;
+const GFX={t:0,upd:[]};
+(function(){
+  const OCT=IS_TOUCH?3:5;
+  const NOISE=`float h21(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
+float vn2(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h21(i),h21(i+vec2(1.,0.)),f.x),mix(h21(i+vec2(0.,1.)),h21(i+vec2(1.,1.)),f.x),f.y);}
+float fbm2(vec2 p){float a=.5,s=0.;for(int i=0;i<OCT;i++){s+=a*vn2(p);p*=2.03;a*=.5;}return s;}`;
+
+  /* ---- 1. Sky v2: sun halo + drifting lit clouds ---- */
+  try{
+    const su={top:{value:new THREE.Color(0x2f74c0)},mid:{value:new THREE.Color(0xffb888)},bot:{value:new THREE.Color(0xffe0ac)},uSun:{value:sunDir.clone()},uTime:{value:0}};
+    GFX.skyM=sky.material=new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,fog:false,defines:{OCT:OCT},uniforms:su,
+      vertexShader:'varying vec3 vP;void main(){vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
+      fragmentShader:`uniform vec3 top;uniform vec3 mid;uniform vec3 bot;uniform vec3 uSun;uniform float uTime;varying vec3 vP;
+${NOISE}
+void main(){
+  vec3 dir=normalize(vP);float h=dir.y;
+  vec3 c=h>0.0?mix(mid,top,pow(h,0.45)):mix(mid,bot,clamp(-h*4.0,0.0,1.0));
+  float sd=max(dot(dir,uSun),0.0);
+  c+=vec3(1.0,0.72,0.42)*pow(sd,6.0)*0.35+vec3(1.0,0.86,0.6)*pow(sd,90.0)*0.5;
+  if(h>0.0){
+    vec2 uv=dir.xz/(h+0.22)*1.15+vec2(uTime*0.004,uTime*0.0015);
+    float d=fbm2(uv*1.6);
+    float cov=smoothstep(0.50,0.78,d);
+    float fade=smoothstep(0.02,0.22,h);
+    vec2 sdir=normalize(uSun.xz+vec2(1e-4))*0.06;
+    float d2=fbm2((uv-sdir)*1.6);
+    float lit=clamp((d-d2)*6.0+0.55,0.0,1.0);
+    vec3 cs=mix(vec3(0.62,0.52,0.60),vec3(1.0,0.83,0.68),lit);
+    cs+=vec3(1.0,0.75,0.5)*pow(sd,8.0)*0.5*(1.0-lit*0.3);
+    c=mix(c,cs,cov*fade*0.9);
+  }
+  gl_FragColor=vec4(c,1.0);
+}`});
+    GFX.upd.push(()=>{su.uTime.value=GFX.t;});
+  }catch(e){console.warn('gfx sky',e);}
+
+  /* ---- 2. Water v2: fresnel, real reflections, ripples, sun glitter, shore foam ---- */
+  let refl=null;
+  try{
+    refl=(typeof waterReflector!=='undefined'&&waterReflector)?waterReflector.material.uniforms:null;
+    const wu={uTime:{value:0},uSun:{value:sunDir.clone()},uFogColor:{value:scene.fog.color},uFogNear:{value:scene.fog.near},uFogFar:{value:scene.fog.far},
+      uIsle0:{value:new THREE.Vector2(0,0)},uIsle1:{value:new THREE.Vector2(ISLE2.x,ISLE2.z)},
+      tRefl:{value:refl?refl.tDiffuse.value:null},textureMatrix:refl?refl.textureMatrix:{value:new THREE.Matrix4()}};
+    const defs={OCT:OCT,RIPPLES:IS_TOUCH?5:8};if(refl)defs.USE_REFL=1;
+    const wm=new THREE.ShaderMaterial({transparent:true,defines:defs,uniforms:wu,
+      vertexShader:`uniform mat4 textureMatrix;varying vec3 vW;varying vec4 vR;varying float vFD;
+void main(){vec4 wp=modelMatrix*vec4(position,1.0);vW=wp.xyz;vR=textureMatrix*vec4(position.x,position.y,0.0,1.0);
+vec4 mv=viewMatrix*wp;vFD=-mv.z;gl_Position=projectionMatrix*mv;}`,
+      fragmentShader:`uniform float uTime;uniform vec3 uSun;uniform vec3 uFogColor;uniform float uFogNear;uniform float uFogFar;
+uniform vec2 uIsle0;uniform vec2 uIsle1;uniform sampler2D tRefl;
+varying vec3 vW;varying vec4 vR;varying float vFD;
+${NOISE}
+vec3 waveN(vec2 p,float t,float fadeR){
+  float dx=cos(p.x*.15+t*1.2)*.018+cos((p.x+p.y)*.09+t*.6)*.0135;
+  float dz=cos(p.y*.2+t*.9)*.02+cos((p.x+p.y)*.09+t*.6)*.0135;
+  vec2 g=vec2(0.0);
+  for(int i=0;i<RIPPLES;i++){
+    float fi=float(i);float ang=fi*2.399+0.7;vec2 d=vec2(cos(ang),sin(ang));
+    float k=1.3+fi*0.85;float sp=0.8+fi*0.22;float a=0.018/(1.0+fi*0.35);
+    g+=d*(a*k*cos(dot(d,p)*k+t*sp+fi*1.7));
+  }
+  g*=1.5*fadeR;
+  return normalize(vec3(-(dx+g.x),1.0,-(dz+g.y)));
+}
+void main(){
+  vec2 p=vW.xz;
+  float fadeR=1.0-smoothstep(60.0,220.0,vFD);
+  vec3 N=waveN(p,uTime,fadeR);
+  vec3 V=normalize(cameraPosition-vW);
+  float ndv=clamp(dot(N,V),0.0,1.0);
+  float fres=0.08+0.92*pow(1.0-ndv,4.0);
+  float r=min(length(p-uIsle0),length(p-uIsle1));
+  float sd=r-24.2;
+  float shallow=1.0-smoothstep(0.0,26.0,sd);
+  vec3 deep=vec3(0.05,0.47,0.62),shal=vec3(0.32,0.88,0.82);
+  vec3 col=mix(deep,shal,shallow*shallow*0.9+shallow*0.1);
+  float sss=pow(clamp(dot(V,-uSun)*.5+.5,0.,1.),4.)*clamp(vW.y*3.0+0.5,0.,1.)*0.5;
+  col+=vec3(0.1,0.35,0.3)*sss;
+#ifdef USE_REFL
+  vec4 rc=vR;rc.xy+=N.xz*0.3*rc.w;
+  vec3 rf=texture2DProj(tRefl,rc).rgb;
+#else
+  vec3 R=reflect(-V,N);
+  vec3 rf=mix(vec3(1.0,0.72,0.53),vec3(0.18,0.45,0.75),clamp(R.y*1.5,0.,1.));
+#endif
+  col=mix(col,rf,clamp(fres*0.9+0.06,0.0,1.0));
+  vec3 Hh=normalize(uSun+V);float nh=clamp(dot(N,Hh),0.,1.);
+  col+=vec3(1.0,0.93,0.75)*(pow(nh,220.0)*2.2+pow(nh,40.0)*0.25);
+  float wv=sin(sd*0.9-uTime*1.3+fbm2(p*.35)*4.0);
+  float band=smoothstep(0.55,0.95,wv)*(1.0-smoothstep(1.5,9.0,sd))*smoothstep(-1.0,0.6,sd);
+  float edge=(1.0-smoothstep(0.0,1.6,sd))*smoothstep(-1.2,0.2,sd);
+  float fo=fbm2(p*1.6+uTime*0.05);
+  float foam=clamp((band*0.75+edge)*smoothstep(0.32,0.72,fo+edge*0.35),0.,1.);
+  col=mix(col,vec3(1.0,0.97,0.9),foam*0.9);
+  float alpha=clamp(mix(0.86,0.58,shallow)+fres*0.14,0.,1.);
+  alpha=max(alpha,foam*0.9);
+  col=mix(col,uFogColor,smoothstep(uFogNear,uFogFar,vFD));
+  gl_FragColor=vec4(col,alpha);
+}`});
+    water.material=wm;GFX.wm=wm;GFX.hasRefl=!!refl;
+    GFX.upd.push(()=>{wu.uTime.value=WT;});
+  }catch(e){console.warn('gfx water',e);}
+
+  /* ---- 3. dust motes / pollen near the islands ---- */
+  let dustPts=null,flareG=null;
+  try{
+    const N=IS_TOUCH?110:260,g=new THREE.BufferGeometry(),a=new Float32Array(N*3);
+    for(let i=0;i<N*3;i++)a[i]=Math.random();
+    g.setAttribute('position',new THREE.BufferAttribute(a,3));
+    const du={uT:{value:0},uScale:{value:innerHeight*.5},uI0:{value:new THREE.Vector2(0,0)},uI1:{value:new THREE.Vector2(ISLE2.x,ISLE2.z)}};
+    const dm=new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false,uniforms:du,
+      vertexShader:`uniform float uT;uniform float uScale;uniform vec2 uI0;uniform vec2 uI1;varying float vA;
+void main(){
+  vec3 s=position;vec3 box=vec3(64.0,12.0,64.0);vec3 base=s*box*3.0;float ph=s.x*40.0+s.z*17.0;
+  vec3 dr=vec3(sin(uT*0.23+ph)*1.6+uT*0.35,sin(uT*0.31+ph*1.3)*0.7+uT*0.06,cos(uT*0.19+ph*0.7)*1.6+uT*0.12);
+  vec3 q=base+dr;vec3 c=cameraPosition;
+  vec3 wp=vec3(c.x+mod(q.x-c.x+box.x*.5,box.x)-box.x*.5,0.5+mod(q.y,box.y),c.z+mod(q.z-c.z+box.z*.5,box.z)-box.z*.5);
+  vec4 mv=viewMatrix*vec4(wp,1.0);gl_Position=projectionMatrix*mv;float dist=-mv.z;
+  float tw=0.6+0.4*sin(uT*1.7+ph*3.0);
+  float r=min(length(wp.xz-uI0),length(wp.xz-uI1));
+  vA=tw*(1.0-smoothstep(22.0,44.0,r))*(1.0-smoothstep(20.0,34.0,dist))*smoothstep(0.5,3.0,dist);
+  gl_PointSize=clamp(uScale*0.035/max(dist,0.5),1.0,7.0);
+}`,
+      fragmentShader:`varying float vA;void main(){float d=length(gl_PointCoord-0.5);float a=smoothstep(0.5,0.0,d)*vA*0.55;if(a<0.01)discard;gl_FragColor=vec4(1.0,0.86,0.6,a);}`});
+    dustPts=new THREE.Points(g,dm);dustPts.frustumCulled=false;scene.add(dustPts);GFX.dust=dustPts;
+    GFX.upd.push(()=>{du.uT.value=GFX.t;du.uScale.value=renderer.domElement.height*.5;});
+  }catch(e){console.warn('gfx dust',e);}
+
+  /* ---- 4. lens flare ---- */
+  try{
+    flareG=new THREE.Group();camera.add(flareG);GFX.flare=flareG;
+    const defs=[[1.0,.20,'rgba(255,240,200,.55)','rgba(255,190,110,.18)',.55],[.55,.05,'rgba(255,220,160,.5)','rgba(255,170,90,.2)',.3],[-.35,.09,'rgba(160,220,255,.45)','rgba(120,190,255,.15)',.28],[-.8,.045,'rgba(255,190,150,.5)','rgba(255,150,100,.15)',.3],[-1.3,.12,'rgba(200,255,220,.35)','rgba(140,230,190,.12)',.2]];
+    const els=defs.map(d=>{const s=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex(d[2],d[3]),transparent:true,depthTest:false,depthWrite:false,fog:false,blending:THREE.AdditiveBlending,opacity:0}));s.renderOrder=999;flareG.add(s);return{s,f:d[0],sz:d[1],o:d[4]};});
+    const sw=new THREE.Vector3(),D=6;
+    GFX.upd.push(()=>{
+      camera.updateMatrixWorld();
+      sw.copy(camera.position).addScaledVector(sunDir,500).project(camera);
+      const vis=sw.z<1&&Math.abs(sw.x)<1.6&&Math.abs(sw.y)<1.6;
+      const k=vis?Math.max(0,1-Math.hypot(sw.x,sw.y)*.6):0;
+      if(gradePass){gradePass.uniforms.uSun.value.set(sw.x*.5+.5,sw.y*.5+.5);gradePass.uniforms.uSunK.value=(GFX.god!==false&&GFX.fxOn!==false)?k:0;}
+      const th=Math.tan(camera.fov*Math.PI/360),asp=camera.aspect;
+      for(const e of els){
+        e.s.visible=k>0;if(k<=0)continue;
+        e.s.position.set(sw.x*e.f*th*asp*D,sw.y*e.f*th*D,-D);
+        const sc=e.sz*2*th*D;e.s.scale.set(sc,sc,1);e.s.material.opacity=k*e.o;
+      }
+    });
+  }catch(e){console.warn('gfx flare',e);}
+
+  /* ---- 5. reflector: draws only to its texture; hide water/flare/dust during the mirror pass ---- */
+  try{
+    if(typeof waterReflector!=='undefined'&&waterReflector&&refl){
+      waterReflector.material.colorWrite=false;waterReflector.material.depthWrite=false;
+      const ob=waterReflector.onBeforeRender;
+      waterReflector.onBeforeRender=function(){
+        const a=water.visible,b=flareG?flareG.visible:true,c=dustPts?dustPts.visible:true;
+        water.visible=false;if(flareG)flareG.visible=false;if(dustPts)dustPts.visible=false;
+        try{ob.apply(this,arguments);}finally{water.visible=a;if(flareG)flareG.visible=b;if(dustPts)dustPts.visible=c;}
+      };
+    }
+  }catch(e){console.warn('gfx refl',e);}
+})();
+GFX.update=function(dt){GFX.t+=dt;for(const f of GFX.upd){try{f();}catch(e){}}if(gradePass)gradePass.uniforms.uTime.value=GFX.t;};
+
+/* ================= 3D item icons for the inventory bar ================= */
+var IC;
+function icoInit(){
+  if(IC)return IC;
+  const sc=new THREE.Scene();
+  sc.add(new THREE.HemisphereLight(0xffffff,0x9aa7b5,1.05));
+  const d1=new THREE.DirectionalLight(0xffffff,1.7);d1.position.set(2,3,4);sc.add(d1);
+  const d2=new THREE.DirectionalLight(0xbfe6ff,.6);d2.position.set(-3,1,2);sc.add(d2);
+  const N=128,lut=new Uint8Array(256);for(let i=0;i<256;i++)lut[i]=Math.round(255*Math.pow(i/255,.72));
+  IC={sc:sc,cam:new THREE.PerspectiveCamera(30,1,.01,60),rt:new THREE.WebGLRenderTarget(N,N,{format:THREE.RGBAFormat,minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter}),px:new Uint8Array(N*N*4),cv:document.createElement('canvas'),N:N,lut:lut,cache:{}};
+  IC.cv.width=IC.cv.height=N;return IC;
+}
+function icoShot(obj,mode){
+  const I=icoInit(),N=I.N;
+  const outer=new THREE.Group(),mid=new THREE.Group(),inner=new THREE.Group();
+  outer.add(mid);mid.add(inner);inner.add(obj);
+  obj.visible=true;obj.position.set(0,0,0);obj.rotation.set(0,0,0);
+  inner.updateMatrixWorld(true);
+  let box=new THREE.Box3().setFromObject(inner);
+  const c=box.getCenter(new THREE.Vector3()),sz=box.getSize(new THREE.Vector3());
+  inner.position.set(-c.x,-c.y,-c.z);
+  if(mode==='long'){
+    if(sz.z>=sz.x&&sz.z>=sz.y){mid.rotation.y=-Math.PI/2+.3;outer.rotation.z=.62;}
+    else if(sz.y>=sz.x){outer.rotation.z=-.7;mid.rotation.y=.4;}
+    else{outer.rotation.z=.55;mid.rotation.y=.3;}
+  }else{mid.rotation.y=-.5;outer.rotation.x=.25;}
+  I.sc.add(outer);outer.updateMatrixWorld(true);
+  box=new THREE.Box3().setFromObject(outer);
+  const sph=box.getBoundingSphere(new THREE.Sphere());
+  const dist=Math.max(.3,sph.radius)/Math.sin(I.cam.fov*Math.PI/360)*1.04;
+  I.cam.position.set(sph.center.x,sph.center.y,sph.center.z+dist);I.cam.lookAt(sph.center);I.cam.updateMatrixWorld(true);
+  const R=renderer,prevRT=R.getRenderTarget(),prevCol=R.getClearColor(new THREE.Color()),prevA=R.getClearAlpha();
+  try{R.setRenderTarget(I.rt);R.setClearColor(0x000000,0);R.clear(true,true,true);R.render(I.sc,I.cam);R.readRenderTargetPixels(I.rt,0,0,N,N,I.px);}
+  finally{R.setRenderTarget(prevRT);R.setClearColor(prevCol,prevA);I.sc.remove(outer);}
+  const ctx=I.cv.getContext('2d'),img=ctx.createImageData(N,N),lut=I.lut;
+  for(let y=0;y<N;y++){const sy=(N-1-y)*N*4,dy=y*N*4;for(let x=0;x<N*4;x+=4){img.data[dy+x]=lut[I.px[sy+x]];img.data[dy+x+1]=lut[I.px[sy+x+1]];img.data[dy+x+2]=lut[I.px[sy+x+2]];img.data[dy+x+3]=I.px[sy+x+3];}}
+  ctx.putImageData(img,0,0);return I.cv.toDataURL('image/png');
+}
+function icoHTML(key,emoji,build,mode){
+  const I=icoInit();let u=I.cache[key];
+  if(u===undefined){try{u=icoShot(build(),mode);I.cache[key]=u;}catch(e){I.fail=I.fail||{};I.fail[key]=(I.fail[key]||0)+1;if(I.fail[key]>=3){console.warn('ico',key,e);I.cache[key]=null;}u=null;}}
+  return u?'<img class="ico" alt="" src="'+u+'">':emoji;
+}
+function baitObj(id){
+  const g=new THREE.Group(),mk=(geo,c,o)=>{const m=new THREE.Mesh(geo,M(c,o));g.add(m);return m;};
+  const capsX=(r,len,c,y)=>{const a=mk(new THREE.CylinderGeometry(r,r,len,20),c);a.rotation.z=Math.PI/2;a.position.y=y||0;[-1,1].forEach(s=>{const b=mk(new THREE.SphereGeometry(r,20,16),c);b.position.set(s*len/2,y||0,0);});};
+  const tube=(pts,r,c)=>mk(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map(p=>new THREE.Vector3(p[0],p[1],p[2]))),24,r,8),c);
+  if(id==='bread'){mk(new THREE.BoxGeometry(.9,.42,.5),0xe6b86a);const t=mk(new THREE.SphereGeometry(.3,20,14),0xc98a3c);t.scale.set(1.55,.5,.85);t.position.y=.2;}
+  else if(id==='worm'){tube([[-.5,0,0],[-.25,.15,.05],[0,-.05,0],[.25,.15,-.05],[.5,0,0]],.075,0xd98a8a);}
+  else if(id==='hotdog'){capsX(.17,.8,0xe0b070,0);capsX(.12,.95,0xc0392b,.1);}
+  else if(id==='carrot'){const c=mk(new THREE.ConeGeometry(.2,.9,20),0xff8a1f);c.rotation.z=-Math.PI/2;for(let i=-1;i<=1;i++){const l=mk(new THREE.ConeGeometry(.05,.32,8),0x3fae3f);l.rotation.z=Math.PI/2;l.rotation.x=i*.4;l.position.set(-.6,i*.05,i*.06);}}
+  else if(id==='livefish'){const b=buildFish(FISH_BY.mackerel||FISH[0],false);g.add(b.g);}
+  else if(id==='shrimp'){tube([[-.45,-.15,0],[-.25,.1,0],[.05,.22,0],[.35,.1,0],[.5,-.15,0]],.09,0xff8fa3);const t=mk(new THREE.ConeGeometry(.12,.22,4),0xff6f8a);t.position.set(.55,-.22,0);t.rotation.z=Math.PI;}
+  else if(id==='pearl'){const a=mk(new THREE.SphereGeometry(.5,24,12),0x8c96a3);a.scale.set(1,.28,.85);a.position.y=-.1;const b=mk(new THREE.SphereGeometry(.5,24,12),0x9aa4b0);b.scale.set(1,.26,.85);b.position.set(0,.2,-.1);b.rotation.x=-.5;mk(new THREE.SphereGeometry(.2,24,18),0xf7f7ff,{metalness:.3,roughness:.15}).position.y=.04;}
+  else{const gold=id==='boss2bait',col=gold?0xffd23f:0xe8e8e0,o=gold?{metalness:.6,roughness:.35}:{};
+    mk(new THREE.SphereGeometry(.4,24,18),col,o);const j=mk(new THREE.BoxGeometry(.4,.16,.3),col,o);j.position.set(0,-.4,.05);
+    [-1,1].forEach(s=>{const e=mk(new THREE.SphereGeometry(.1,14,12),0x111111);e.position.set(s*.15,.05,.34);});const n=mk(new THREE.ConeGeometry(.05,.12,4),0x111111);n.position.set(0,-.1,.4);}
+  return g;
+}
+function renderInvBar(){
+  const box=$('invbar');if(!box)return;
+  let html=`<div class="islot ${S.equip==='rod'?'active':''}" data-a="equiprod"><span class="lab">${ROD[S.rodLv].n}</span>${icoHTML('rod'+S.rodLv,'🎣',()=>rodG.clone(true),'long')}</div>`;
+  html+=`<div class="islot ${S.equip==='weapon'?'active':''}" data-a="equipweap"><span class="lab">${WEAPON[S.weaponLv].n}</span>${icoHTML('w'+S.weaponLv,WEAPON_EMOJI[S.weaponLv]||'🔪',()=>wModels[S.weaponLv].clone(true),'long')}</div>`;
+  BAITS.forEach(b=>{
+    if(!S.baits[b.id])return;
+    html+=`<div class="islot ${S.equippedBait===b.id?'active':''}" data-a="equipbait" data-id="${b.id}"><span class="lab">${b.n}${S.equippedBait===b.id?' (سوار)':''}</span>${icoHTML('b'+b.id,b.emoji,()=>baitObj(b.id),'free')}</div>`;
+  });
+  S.inv.forEach((f,i)=>{
+    html+=`<div class="islot ${S.equip==='fish'&&S.heldRef===f?'active':''}" data-a="holdfish" data-i="${i}"><span class="lab">توی دست بگیر: ${f.def.name}</span>${icoHTML('f'+f.def.id+(f.rare?'r':''),'🐟',()=>buildFish(f.def,f.rare).g,'free')}<span class="badge">${fa(f.value)}$</span></div>`;
+  });
+  box.innerHTML=html;
+}
+
+/* ================= hold a fish in hand: eat / sell ================= */
+const heldG=new THREE.Group();camera.add(heldG);heldG.position.set(.3,-.32,-.6);heldG.visible=false;
+let heldKey='';
+function heldFish(){return(S.heldRef&&S.inv.indexOf(S.heldRef)>=0)?S.heldRef:null;}
+function heldRebuild(){
+  while(heldG.children.length){const c=heldG.children[0];heldG.remove(c);try{disposeObj(c);}catch(e){}}
+  const f=heldFish();heldKey=f?(f.def.id+(f.rare?'r':'')):'';if(!f)return;
+  const fg=buildFish(f.def,f.rare).g;
+  const sz=new THREE.Box3().setFromObject(fg).getSize(new THREE.Vector3()),mx=Math.max(sz.x,sz.y,sz.z)||1;
+  fg.scale.multiplyScalar(.75/mx);fg.updateMatrixWorld(true);
+  const c=new THREE.Box3().setFromObject(fg).getCenter(new THREE.Vector3());fg.position.sub(c);
+  const wrap=new THREE.Group();wrap.add(fg);wrap.rotation.set(.15,Math.PI-.35,.25);heldG.add(wrap);
+}
+function holdFish(i){
+  const f=S.inv[i];if(!f||R.st==='fight')return;
+  if(S.equip==='fish'&&S.heldRef===f){S.heldRef=null;S.equip='rod';updateHUD();return;}
+  if(R.st!=='idle')resetRod();
+  S.equip='fish';S.heldRef=f;input.mouse=false;heldRebuild();updateHUD();
+}
+function fishAction(){
+  const f=heldFish();if(!f){if(S.equip==='fish')S.equip='rod';return;}
+  const i=S.inv.indexOf(f);
+  if(nearShop()){S.inv.splice(i,1);S.money+=f.value;S.earned+=f.value;SFX.coin();toast('فروختی! +'+fa(f.value)+' $','good');submitScore();}
+  else eatFish(i);
+  const next=S.inv[Math.min(i,S.inv.length-1)];
+  if(next){S.heldRef=next;heldRebuild();}else{S.heldRef=null;if(S.equip==='fish')S.equip='rod';}
+  updateHUD();
+}
+GFX.upd.push(function(){
+  if(S.equip==='fish'&&!heldFish()){S.equip='rod';S.heldRef=null;updateHUD();}
+  const f=heldFish(),on=S.equip==='fish'&&!!f;
+  if(on){const key=f.def.id+(f.rare?'r':'');if(key!==heldKey)heldRebuild();}
+  heldG.visible=on;
+  if(on){heldG.position.y=-.32+Math.sin(player.bob||0)*.01+Math.sin(GFX.t*2)*.004;heldG.rotation.z=Math.sin(GFX.t*1.3)*.03;}
+});
+
+/* ================= ONLINE SYNC (shared money · boat · gull · fish ghosts) ================= */
+function inRoom(){return !!(MP.connected&&MP.room&&MP.myId!=null);}
+function isGullOwner(){if(!inRoom())return true;let m=MP.myId;remotePlayers.forEach((r,id)=>{if(id<m)m=id;});return m===MP.myId;}
+function netSend(k,d){
+  if(!inRoom())return;
+  const s=JSON.stringify({k:k,f:MP.myId,i:++NET.n,d:d||{}});
+  mpSend({type:'catch',name:'@@'+s,fish:'',value:0});
+}
+function netSendSync(){netSend('sync',{m:S.money,br:S.boatRepaired?1:0,bx:boatState.x,bz:boatState.z,by:boatState.yaw});}
+function ghostKill(nid){const G=NET.ghosts.get(nid);if(!G)return;scene.remove(G.g);try{disposeObj(G.g);}catch(e){}NET.ghosts.delete(nid);}
+function dropGhosts(owner){NET.ghosts.forEach((G,nid)=>{if(G.owner===owner)ghostKill(nid);});}
+function clearGhosts(){NET.ghosts.forEach((G,nid)=>ghostKill(nid));}
+function ghostList(){return Array.from(NET.ghosts.values());}
+function netRecv(s){
+  let m;try{m=JSON.parse(s);}catch(e){return;}
+  if(!m||m.f===MP.myId||typeof m.k!=='string')return;
+  if((NET.last[m.f]||0)>=m.i)return;NET.last[m.f]=m.i;
+  const d=m.d||{};
+  try{
+    switch(m.k){
+      case 'money':NET.applying=true;S.money=Math.max(0,S.money+(d.d||0));NET.applying=false;updateHUD();if(S.shop)renderShop();break;
+      case 'sync':
+        if(!NET.synced){NET.synced=true;NET.applying=true;S.money=d.m||0;NET.applying=false;
+          if(d.br&&!S.boatRepaired){S.boatRepaired=true;repairBoatVisual();}
+          if(d.bx!==undefined&&!player.onBoat){boatState.x=d.bx;boatState.z=d.bz;boatState.yaw=d.by;boat.position.set(d.bx,surfaceY(d.bx,d.bz)+.5,d.bz);boat.rotation.set(0,d.by,0);}
+          updateHUD();}
+        break;
+      case 'brep':if(!S.boatRepaired){S.boatRepaired=true;repairBoatVisual();toast('یکی از دوستات قایق رو تعمیر کرد!','good');}break;
+      case 'boat':
+        if(player.onBoat)break;
+        boatState.x=d.x;boatState.z=d.z;boatState.yaw=d.y;NET.boatT={x:d.x,z:d.z,y:d.y};
+        if(d.on)NET.boatBy=m.f;else{if(NET.boatBy===m.f)NET.boatBy=null;boat.position.set(d.x,surfaceY(d.x,d.z)+.5,d.z);boat.rotation.set(0,d.y,0);}
+        break;
+      case 'lf':toast(d.u+' یه '+d.n+' گرفت! بزنیدش!','good');break;
+      case 'eq':{const r=remotePlayers.get(m.f);if(r)setRemoteItem(r,d);else NET.eqPending[m.f]=d;break;}
+      case 'fp':if(d.to===MP.myId){const f=fishes.find(x=>x.nid===d.n);
+          if(f&&f.state==='dead'){const i=fishes.indexOf(f);const pk={to:m.f,n:f.nid,di:FISH.indexOf(f.def),r:f.rare?1:0,v:f.value,t:f.tricks||''};removeFish(i);netSend('fpok',pk);}
+          else netSend('fpno',{to:m.f,n:d.n});}
+        break;
+      case 'fpok':if(d.to===MP.myId){NET.pending=null;ghostKill(d.n);const def=FISH[d.di];
+          if(def){S.inv.push({def:def,rare:!!d.r,value:d.v,tricks:d.t||''});SFX.tick();toast(def.name+' توی یخدان رفت.');updateHUD();}}
+        break;
+      case 'fpno':if(d.to===MP.myId){NET.pending=null;ghostKill(d.n);}break;
+      case 'gs':NET.gs=d;break;
+      case 'gh':if(isGullOwner())hitGull(d.d,true);break;
+      case 'fh':{const f=fishes.find(x=>x.nid===d.n);if(f&&f.state==='alive')hitFish(f,{dmg:d.d,ranged:!!d.r},d.ds||0,d.x,d.z);break;}
+      case 'fs':{
+        const now=performance.now();
+        (d.a||[]).forEach(e=>{
+          const nid=e[0];let G=NET.ghosts.get(nid);
+          if(!G){const def=FISH[e[1]];if(!def)return;const b=buildFish(def,!!e[2]);scene.add(b.g);
+            G={ghost:true,nid:nid,owner:m.f,def:def,rare:!!e[2],g:b.g,body:b.body,mat:b.mat,r:b.r,pos:b.g.position,state:'alive',hp:def.hp,maxHp:def.hp,heading:0,tx:e[3],ty:e[4],tz:e[5],flash:0,age:0,onGround:false,last:now};
+            G.pos.set(e[3],e[4],e[5]);NET.ghosts.set(nid,G);}
+          G.tx=e[3];G.ty=e[4];G.tz=e[5];G.heading=e[6];G.state=e[7]?'dead':'alive';G.hp=e[8];G.onGround=!!e[9];G.last=now;
+        });
+        break;}
+    }
+  }catch(e){console.warn('net',m.k,e);}
+}
+function setRemoteItem(r,d){
+  const key=d.e+':'+(d.e==='weapon'?d.w:d.e==='rod'?d.rl:d.di+'r'+d.rr);
+  if(r.itemKey===key)return;r.itemKey=key;
+  if(r.holder){r.g.remove(r.holder);r.holder=null;}
+  let obj=null,fish=false;
+  if(d.e==='rod')obj=rodG.clone(true);
+  else if(d.e==='weapon'&&wModels[d.w])obj=wModels[d.w].clone(true);
+  else if(d.e==='fish'&&FISH[d.di]){obj=buildFish(FISH[d.di],!!d.rr).g;fish=true;}
+  if(!obj)return;
+  obj.visible=true;obj.position.set(0,0,0);obj.rotation.set(0,0,0);
+  const holder=new THREE.Group(),pitch=new THREE.Group();holder.add(pitch);pitch.add(obj);
+  if(fish){
+    const bx=new THREE.Box3().setFromObject(obj),sz=bx.getSize(new THREE.Vector3()),mx=Math.max(sz.x,sz.y,sz.z)||1;
+    obj.scale.multiplyScalar(.7/mx);obj.updateMatrixWorld(true);
+    const c=new THREE.Box3().setFromObject(obj).getCenter(new THREE.Vector3());obj.position.sub(c);
+    holder.position.set(.3,1.0,.45);holder.rotation.y=-Math.PI/2;
+  }else{holder.position.set(.42,1.1,.15);holder.rotation.y=Math.PI;pitch.rotation.x=.35;}
+  r.g.add(holder);r.holder=holder;
+}
+function gullMirror(dt){
+  const T=NET.gs;if(!T)return;const G=gull;
+  G.st=T.s;G.hp=T.hp;G.cx=T.cx;G.cz=T.cz;G.ang=T.a;G.t=T.t;G.carry=null;G.tgt=null;
+  if(T.s==='away'){G.g.visible=false;return;}
+  if(!G.g.visible){G.g.visible=true;G.pos.set(T.x,T.y,T.z);}
+  const a=1-Math.exp(-12*dt);G.pos.x=lerp(G.pos.x,T.x,a);G.pos.y=lerp(G.pos.y,T.y,a);G.pos.z=lerp(G.pos.z,T.z,a);
+  G.g.position.copy(G.pos);
+  let dy=T.r-G.g.rotation.y;while(dy>Math.PI)dy-=6.283;while(dy<-Math.PI)dy+=6.283;G.g.rotation.y+=dy*Math.min(1,10*dt);
+  G.flap+=dt*(G.st==='dive'?6:11);const fl=Math.sin(G.flap)*.7;G.wr.rotation.x=fl;G.wl.rotation.x=-fl;
+}
+GFX.gull=function(dt){if(isGullOwner())updateGull(dt);else gullMirror(dt);};
+function netTick(dt){
+  if(!inRoom()){if(NET.ghosts.size)clearGhosts();NET.boatBy=null;NET.gs=null;return;}
+  const now=performance.now();
+  if(NET.pending){NET.pendT-=dt;if(NET.pendT<=0)NET.pending=null;}
+  NET.eqT-=dt;
+  {const hf=heldFish(),key=S.equip+':'+(S.equip==='weapon'?S.weaponLv:S.equip==='rod'?S.rodLv:(hf?FISH.indexOf(hf.def)+(hf.rare?'r':''):''));
+   if(key!==NET.eqKey||NET.eqT<=0){NET.eqKey=key;NET.eqT=2;netSend('eq',{e:S.equip,w:S.weaponLv,rl:S.rodLv,di:hf?FISH.indexOf(hf.def):-1,rr:hf&&hf.rare?1:0});}}
+  remotePlayers.forEach((r,id)=>{if(NET.eqPending[id]){setRemoteItem(r,NET.eqPending[id]);delete NET.eqPending[id];}});
+  if(player.onBoat!==NET.wasOnBoat){NET.wasOnBoat=player.onBoat;netSend('boat',{x:boatState.x,z:boatState.z,y:boatState.yaw,on:player.onBoat?1:0});}
+  NET.bt-=dt;if(NET.bt<=0){NET.bt=.1;if(player.onBoat)netSend('boat',{x:+boatState.x.toFixed(2),z:+boatState.z.toFixed(2),y:+boatState.yaw.toFixed(2),on:1});}
+  NET.gt-=dt;
+  if(NET.gt<=0){NET.gt=.1;if(isGullOwner())netSend('gs',{s:gull.st,x:+gull.pos.x.toFixed(2),y:+gull.pos.y.toFixed(2),z:+gull.pos.z.toFixed(2),r:+gull.g.rotation.y.toFixed(2),hp:gull.hp,cx:gull.cx,cz:gull.cz,a:+gull.ang.toFixed(2),t:+gull.t.toFixed(1)});}
+  NET.ft-=dt;
+  if(NET.ft<=0){NET.ft=.12;const a=[];
+    for(const f of fishes){if((f.state!=='alive'&&f.state!=='dead')||!f.nid)continue;const di=FISH.indexOf(f.def);if(di<0)continue;
+      a.push([f.nid,di,f.rare?1:0,+f.pos.x.toFixed(2),+f.pos.y.toFixed(2),+f.pos.z.toFixed(2),+f.heading.toFixed(2),f.state==='dead'?1:0,f.hp,f.onGround?1:0]);if(a.length>=12)break;}
+    if(a.length||NET.hadFish){NET.hadFish=a.length>0;netSend('fs',{a:a});}}
+  if(NET.boatBy!=null&&!player.onBoat&&NET.boatT){const T=NET.boatT,k=1-Math.exp(-10*dt);
+    boat.position.x=lerp(boat.position.x,T.x,k);boat.position.z=lerp(boat.position.z,T.z,k);boat.position.y=surfaceY(boat.position.x,boat.position.z)+.5;
+    let dy=T.y-boat.rotation.y;while(dy>Math.PI)dy-=6.283;while(dy<-Math.PI)dy+=6.283;
+    boat.rotation.set(Math.sin(WT*1.1)*.02,boat.rotation.y+dy*Math.min(1,10*dt),Math.sin(WT*1.4)*.04);}
+  NET.ghosts.forEach((G,nid)=>{
+    if(now-G.last>900){ghostKill(nid);return;}
+    const k=1-Math.exp(-14*dt);G.pos.x=lerp(G.pos.x,G.tx,k);G.pos.y=lerp(G.pos.y,G.ty,k);G.pos.z=lerp(G.pos.z,G.tz,k);
+    G.g.rotation.y=G.heading;G.age+=dt;
+    if(G.state==='alive'){if(G.onGround){G.body.rotation.x=Math.PI/2+Math.sin(G.age*26)*.3;G.body.rotation.y=Math.sin(G.age*22)*.4;}else{G.body.rotation.x+=6*dt;G.body.rotation.y=Math.sin(G.age*20)*.4;}}
+    else{G.body.rotation.x=Math.PI;G.body.rotation.y=0;}
+    G.flash-=dt;G.mat.emissive.setHex(G.flash>0?0x999999:(G.rare?0x553300:0));
+  });
+}
+(function(){const _u=GFX.update;GFX.update=function(dt){_u(dt);try{netTick(dt);}catch(e){console.warn('netTick',e);}};})();
+{ // shared money: every change is broadcast as a delta and applied on all players
+  let _m=S.money;
+  Object.defineProperty(S,'money',{enumerable:true,configurable:true,get(){return _m;},set(v){const d=v-_m;_m=v;if(d!==0&&!NET.applying&&inRoom())netSend('money',{d:d});}});
+}
+
+/* ================= extra look: smaller sun, wet sand band ================= */
+try{sun.scale.setScalar(.5);sunGlow.scale.set(115,115,1);}catch(e){}
+try{
+  const cv=document.createElement('canvas');cv.width=4;cv.height=64;const x=cv.getContext('2d'),gr=x.createLinearGradient(0,0,0,64);
+  gr.addColorStop(0,'rgba(60,40,18,0)');gr.addColorStop(.5,'rgba(60,40,18,.28)');gr.addColorStop(1,'rgba(50,34,15,.55)');x.fillStyle=gr;x.fillRect(0,0,4,64);
+  const wt=new THREE.CanvasTexture(cv);
+  [[0,0],[ISLE2.x,ISLE2.z]].forEach(p=>{
+    const m=new THREE.Mesh(new THREE.CylinderGeometry(22.04,24.06,1.0,96,1,true),new THREE.MeshBasicMaterial({map:wt,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}));
+    m.position.set(p[0],.52,p[1]);m.renderOrder=1;scene.add(m);});
+}catch(e){console.warn('gfx wet',e);}
+
+/* ================= GRAPHICS SETTINGS (quality presets, ⚙ button, G key) ================= */
+GFXQ={waterEvery:1,shadowEvery:1,wf:0};
+const composerRef=composer;
+const GQ_PRESETS={
+  vlow:{res:.35,shadow:0,water:0,post:0,fx:0,dens:.25},
+  low:{res:.5,shadow:0,water:0,post:0,fx:0,dens:.25},
+  med:{res:.7,shadow:1,water:1,post:1,fx:0,dens:.6},
+  high:{res:1,shadow:2,water:2,post:2,fx:1,dens:1}
+};
+const GQ_NAMES={vlow:'خیلی کم',low:'کم',med:'متوسط',high:'بالا'};
+const GQ_KEY='htfGfx';
+const GQ=Object.assign({preset:'high',fps:0},GQ_PRESETS.high);
+try{
+  const sv=JSON.parse(localStorage.getItem(GQ_KEY)||'null');
+  if(sv&&typeof sv==='object'){
+    const nm=(v,a,b,d)=>(typeof v==='number'&&v>=a&&v<=b)?v:d;
+    GQ.res=nm(sv.res,.3,1,GQ.res);GQ.shadow=nm(sv.shadow,0,2,GQ.shadow);GQ.water=nm(sv.water,0,2,GQ.water);GQ.post=nm(sv.post,0,2,GQ.post);
+    GQ.fx=nm(sv.fx,0,1,GQ.fx);GQ.dens=nm(sv.dens,.1,1,GQ.dens);GQ.fps=nm(sv.fps,0,1,0);
+    GQ.preset=(sv.preset==='custom'||GQ_PRESETS[sv.preset])?sv.preset:'custom';
+  }
+}catch(e){}
+function gfxSave(){try{localStorage.setItem(GQ_KEY,JSON.stringify(GQ));}catch(e){}}
+function gfxDetect(){
+  for(const n in GQ_PRESETS){const p=GQ_PRESETS[n];let same=true;for(const k in p)if(Math.abs(GQ[k]-p[k])>.001)same=false;if(same)return n;}
+  return 'custom';
+}
+function gfxApply(){
+  const q=GQ;
+  try{ // render resolution
+    const base=Math.min(window.devicePixelRatio||1,IS_TOUCH?3:4),pr=Math.max(.5,base*q.res);
+    if(Math.abs(renderer.getPixelRatio()-pr)>.01){renderer.setPixelRatio(pr);renderer.setSize(innerWidth,innerHeight);if(composerRef){composerRef.setPixelRatio(pr);composerRef.setSize(innerWidth,innerHeight);}}
+  }catch(e){console.warn('gq res',e);}
+  try{ // post-processing: 0 = direct render, 1 = grade only, 2 = bloom + light shafts + grade
+    const mode=composerRef?q.post:0;
+    composer=mode>0?composerRef:null;
+    if(mode>0){const pr2=renderer.getPixelRatio();if(Math.abs(composerRef.renderTarget1.width-innerWidth*pr2)>1||Math.abs(composerRef.renderTarget1.height-innerHeight*pr2)>1)composerRef.setSize(innerWidth,innerHeight);}
+    if(bloomPass)bloomPass.enabled=(mode===2);
+    GFX.god=(mode===2);
+    const enc=mode>0?THREE.sRGBEncoding:THREE.LinearEncoding;
+    if(renderer.outputEncoding!==enc)renderer.outputEncoding=enc;
+  }catch(e){console.warn('gq post',e);}
+  try{ // shadows
+    dl.castShadow=q.shadow>0;
+    const size=q.shadow===1?1024:(IS_TOUCH?2560:4096);
+    if(dl.shadow.mapSize.x!==size){dl.shadow.mapSize.set(size,size);if(dl.shadow.map){dl.shadow.map.dispose();dl.shadow.map=null;}}
+    GFXQ.shadowEvery=q.shadow===1?2:1;
+    if(GFXQ.shadowEvery===1)renderer.shadowMap.autoUpdate=true;
+  }catch(e){console.warn('gq shadow',e);}
+  try{ // water + sky
+    const wl=q.water,oct=[2,3,IS_TOUCH?3:5][wl],rip=[3,5,IS_TOUCH?5:8][wl];
+    const wm=GFX.wm,sm=GFX.skyM;
+    if(wm){
+      let ch=false;
+      if(wm.defines.RIPPLES!==rip){wm.defines.RIPPLES=rip;ch=true;}
+      if(wm.defines.OCT!==oct){wm.defines.OCT=oct;ch=true;}
+      const useR=(wl===2&&GFX.hasRefl);
+      if(!!wm.defines.USE_REFL!==useR){if(useR)wm.defines.USE_REFL=1;else delete wm.defines.USE_REFL;ch=true;}
+      if(ch)wm.needsUpdate=true;
+      if(waterReflector)waterReflector.visible=useR;
+    }
+    if(sm&&sm.defines.OCT!==oct){sm.defines.OCT=oct;sm.needsUpdate=true;}
+    GFXQ.waterEvery=[3,2,1][wl];
+  }catch(e){console.warn('gq water',e);}
+  try{ // effects
+    const fx=!!q.fx;GFX.fxOn=fx;
+    if(GFX.dust)GFX.dust.visible=fx;if(GFX.flare)GFX.flare.visible=fx;if(sparkles)sparkles.visible=fx;
+  }catch(e){}
+  try{ // foliage density
+    scene.traverse(o=>{if(o.isInstancedMesh){if(o.userData.fullCount===undefined)o.userData.fullCount=o.count;o.count=Math.max(1,Math.round(o.userData.fullCount*q.dens));}});
+  }catch(e){}
+  const fv=$('fpsV');if(fv)fv.classList.toggle('hidden',!q.fps);
+}
+function gfxRender(){
+  const seg=(k,opts)=>'<div class="seg">'+opts.map(o=>'<button data-k="'+k+'" data-v="'+o[0]+'" class="'+(Math.abs(GQ[k]-o[0])<.001?'on':'')+'">'+o[1]+'</button>').join('')+'</div>';
+  const pv=Math.round(GQ.res*100);
+  $('gfxCard').innerHTML=
+   '<h2>⚙️ تنظیمات گرافیک</h2>'+
+   '<p class="muted" style="font-size:13px;margin-bottom:8px">اگه بازی لَگ داره یا گوشیت ضعیفه، کیفیت رو کم کن.</p>'+
+   '<div class="seg" style="margin-bottom:6px">'+Object.keys(GQ_PRESETS).map(n=>'<button data-p="'+n+'" class="'+(GQ.preset===n?'on':'')+'">'+GQ_NAMES[n]+'</button>').join('')+'</div>'+
+   '<div class="row"><span>وضوح تصویر<small>بیشترین اثر روی سرعت</small></span><span><input type="range" id="gfxRes" min="35" max="100" step="5" value="'+pv+'"> <b id="gfxResV">'+fa(pv)+'٪</b></span></div>'+
+   '<div class="row"><span>سایه‌ها</span>'+seg('shadow',[[0,'خاموش'],[1,'کم'],[2,'زیاد']])+'</div>'+
+   '<div class="row"><span>آب و انعکاس</span>'+seg('water',[[0,'ساده'],[1,'متوسط'],[2,'بالا']])+'</div>'+
+   '<div class="row"><span>افکت‌های نوری<small>بلوم، پرتوهای خورشید، رنگ‌بندی</small></span>'+seg('post',[[0,'خاموش'],[1,'ساده'],[2,'کامل']])+'</div>'+
+   '<div class="row"><span>جلوه‌ها<small>ذرات معلق، لنزفلر، برق آب</small></span>'+seg('fx',[[0,'خاموش'],[1,'روشن']])+'</div>'+
+   '<div class="row"><span>تراکم چمن و گیاه</span>'+seg('dens',[[.25,'کم'],[.6,'متوسط'],[1,'زیاد']])+'</div>'+
+   '<div class="row"><span>نمایش FPS</span>'+seg('fps',[[0,'خاموش'],[1,'روشن']])+'</div>'+
+   '<div class="center" style="margin-top:12px"><button class="btn teal" id="gfxClose">بستن</button></div>';
+}
+function gfxPreset(n){Object.assign(GQ,GQ_PRESETS[n],{preset:n});gfxApply();gfxSave();gfxRender();}
+function gfxSet(k,v){GQ[k]=v;GQ.preset=gfxDetect();gfxApply();gfxSave();gfxRender();}
+function openGfx(){
+  const g=$('gfx');if(!g||!g.classList.contains('hidden'))return;
+  GFX.wasPaused=S.paused;
+  GFX.gfxOnline=!!(MP.connected&&MP.room);   // online: the world keeps running for everyone, only single-player pauses
+  if(S.started&&!S.won&&!S.shop){if(!GFX.gfxOnline)S.paused=true;input.mouse=false;try{document.exitPointerLock();}catch(e){}}
+  gfxRender();g.classList.remove('hidden');
+}
+function closeGfx(){
+  $('gfx').classList.add('hidden');
+  const on=GFX.gfxOnline;GFX.gfxOnline=false;
+  if(S.started&&!S.won&&!S.shop&&!GFX.wasPaused){if(!on)S.paused=false;$('pause').classList.add('hidden');requestLock();}
+}
+$('gfxCard').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.p)gfxPreset(b.dataset.p);
+  else if(b.dataset.k)gfxSet(b.dataset.k,+b.dataset.v);
+  else if(b.id==='gfxClose')closeGfx();
+});
+$('gfxCard').addEventListener('input',e=>{if(e.target.id==='gfxRes')$('gfxResV').textContent=fa(e.target.value)+'٪';});
+$('gfxCard').addEventListener('change',e=>{if(e.target.id==='gfxRes')gfxSet('res',+e.target.value/100);});
+$('gearBtn').addEventListener('click',openGfx);
+$('gfxMenuBtn').addEventListener('click',openGfx);
+$('gfxPauseBtn').addEventListener('click',openGfx);
+document.addEventListener('keydown',e=>{
+  if(e.code==='Escape'&&!$('gfx').classList.contains('hidden')){closeGfx();return;}
+  if(e.code==='KeyG'&&S.started&&!S.won&&!S.shop&&$('gfx').classList.contains('hidden')&&!(document.activeElement&&document.activeElement.tagName==='INPUT'))openGfx();
+});
+// per-frame: shadow throttling for the medium preset, FPS meter, and a one-time "lower the graphics" hint
+GFX.upd.push(function(){
+  GFX.fc=(GFX.fc||0)+1;
+  if(GFXQ.shadowEvery>1){renderer.shadowMap.autoUpdate=false;if(GFX.fc%GFXQ.shadowEvery===0)renderer.shadowMap.needsUpdate=true;}
+  const now=performance.now();
+  if(GFX.lastT){
+    const d=now-GFX.lastT;
+    if(d<1000){GFX.fpsAcc=(GFX.fpsAcc||0)+d;GFX.fpsN=(GFX.fpsN||0)+1;}
+    if(GFX.fpsAcc>=500){
+      GFX.fps=1000*GFX.fpsN/GFX.fpsAcc;GFX.fpsAcc=0;GFX.fpsN=0;
+      if(GQ.fps){const fv=$('fpsV');if(fv)fv.textContent=Math.round(GFX.fps)+' FPS';}
+      if(S.started&&!S.paused&&GFX.fps<22)GFX.lowT=(GFX.lowT||0)+.5;else GFX.lowT=0;
+      if(GFX.lowT>=6&&!GFX.suggested&&GQ.preset!=='vlow'){GFX.suggested=true;toast('بازی لَگ داره؟ دکمهٔ ⚙ بالای صفحه رو بزن و گرافیک رو کم کن.','bad');}
+    }
+  }
+  GFX.lastT=now;
+});
+gfxApply();
+
 /* ============ main loop ============ */
 const clock=new THREE.Clock();
 let mpSendT=0;
@@ -2050,11 +2763,12 @@ function frame(){
   updateRemotes(dt);
   if(running()){
     S.time+=dt;WT+=dt;
-    updatePlayer(dt);updateRod(dt);updateWeapon(dt);updateFish(dt);updateGull(dt);updateFx(dt);updateWorld(dt);updateHint();
+    updatePlayer(dt);updateRod(dt);updateWeapon(dt);updateFish(dt);GFX.gull(dt);updateFx(dt);updateWorld(dt);updateHint();
     if(MP.connected&&MP.room){mpSendT-=dt;if(mpSendT<=0){mpSendT=.09;mpSend({type:'state',x:player.pos.x,y:player.pos.y,z:player.pos.z,yaw:player.yaw});}}
   }else{
     if(!S.started){WT+=dt;player.yaw+=dt*.05;camera.position.set(0,4,12);camera.rotation.set(-.05,player.yaw+Math.PI*.0,0,'YXZ');animateWater();sky.position.copy(camera.position);}
   }
+  GFX.update(dt);
   if(composer)composer.render();else renderer.render(scene,camera);
 }
 camera.position.set(0,4,12);camera.rotation.set(-.05,Math.PI,0,'YXZ');
