@@ -131,7 +131,7 @@ html,body,canvas#c{touch-action:none;-webkit-touch-callout:none;-webkit-tap-high
   h2{font-size:18px}.row{font-size:14px}
 }
 #gearBtn{position:absolute;top:calc(10px + env(safe-area-inset-top));left:calc(50% + 150px);width:42px;height:42px;border-radius:50%;background:rgba(20,38,46,.62);border:3px solid var(--ink);color:#fff;font-size:22px;line-height:1;display:grid;place-items:center;pointer-events:auto;cursor:pointer;box-shadow:0 3px 0 var(--ink);user-select:none;-webkit-user-select:none;touch-action:manipulation}
-.touch #gearBtn{left:50%;margin-left:-19px;top:calc(8px + env(safe-area-inset-top));width:38px;height:38px;font-size:19px}
+.touch #gearBtn{left:calc(50% + 46px);top:calc(8px + env(safe-area-inset-top));width:38px;height:38px;font-size:19px}
 #gfx.overlay{background:rgba(9,54,66,.3)}
 #gfx .card{max-width:560px}
 #gfx .row{flex-wrap:wrap}
@@ -141,6 +141,19 @@ html,body,canvas#c{touch-action:none;-webkit-touch-callout:none;-webkit-tap-high
 #gfx input[type=range]{width:140px;accent-color:var(--coral);vertical-align:middle}
 #fpsV{position:fixed;left:50%;transform:translateX(-50%);top:calc(56px + env(safe-area-inset-top));font:800 12px Vazirmatn,Tahoma,sans-serif;color:#fff;background:rgba(0,0,0,.5);padding:1px 7px;border-radius:6px;pointer-events:none;z-index:50;direction:ltr}
 @media (max-height:520px){#gfx .card{padding:10px 16px;line-height:1.5}#gfx .row{padding:3px 0;font-size:13px}.seg button{font-size:13px}}
+#chatBtn{position:absolute;top:calc(10px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:42px;height:42px;border-radius:50%;background:rgba(20,38,46,.62);border:3px solid var(--ink);color:#fff;font-size:19px;line-height:1;display:grid;place-items:center;pointer-events:auto;cursor:pointer;box-shadow:0 3px 0 var(--ink);user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.touch #chatBtn{top:calc(8px + env(safe-area-inset-top));width:38px;height:38px;font-size:17px}
+#chatBadge{position:absolute;top:-6px;left:-6px;background:var(--coral);color:#fff;font-size:10.5px;font-weight:900;border-radius:9px;min-width:17px;height:17px;display:grid;place-items:center;border:2px solid var(--ink);padding:0 3px;line-height:1}
+#chatPanel{position:absolute;top:196px;right:18px;width:236px;max-height:min(240px,40vh);background:rgba(9,54,66,.85);border:3px solid var(--ink);border-radius:12px;pointer-events:auto;display:flex;flex-direction:column;box-shadow:0 4px 0 var(--ink);overflow:hidden;z-index:40}
+.touch #chatPanel{top:calc(150px + env(safe-area-inset-top));right:calc(12px + env(safe-area-inset-right));width:156px;max-height:32vh}
+#chatMsgs{flex:1;overflow-y:auto;padding:8px 10px;display:flex;flex-direction:column;gap:5px;font-size:13px;color:#fff}
+.chatMsg{word-break:break-word;line-height:1.35}
+.chatMsg b{color:var(--sun);font-weight:900}
+#chatRow{display:flex;gap:6px;padding:7px;border-top:2px solid rgba(255,255,255,.18)}
+#chatInput{flex:1;min-width:0;border-radius:8px;border:2px solid var(--ink);padding:6px 8px;font:inherit;font-size:13px;background:#fff;color:var(--ink)}
+#chatSend{background:var(--coral);color:#fff;border:2px solid var(--ink);border-radius:8px;padding:0 12px;font-weight:900;cursor:pointer;font-size:13px}
+.islot.baitSlot{border-color:var(--teal);margin-left:14px}
+.touch .islot.baitSlot{margin-left:9px}
 </style>
 </head>
 <body>
@@ -156,6 +169,8 @@ html,body,canvas#c{touch-action:none;-webkit-touch-callout:none;-webkit-tap-high
   <div id="buffs" class="pill stroke hidden" style="top:158px;right:18px;font-size:15px"></div>
   <div id="invbar"></div>
   <div id="gearBtn" title="تنظیمات گرافیک (G)">⚙</div>
+  <div id="chatBtn" title="چت (T)">💬<span id="chatBadge" class="hidden">۰</span></div>
+  <div id="chatPanel" class="hidden"><div id="chatMsgs"></div><div id="chatRow"><input id="chatInput" maxlength="140" placeholder="پیام بنویس..."><button id="chatSend">ارسال</button></div></div>
   <div id="mpHud" class="pill stroke hidden" style="top:138px;right:18px;font-size:14px">👥 <b id="mpHudV"></b></div>
   <div id="goal" class="stroke">هدف: تعمیر قایق و رفتن به جزیره طلایی<div class="track"><div class="fill" id="goalFill"></div></div></div>
   <div id="cross"></div>
@@ -178,7 +193,7 @@ html,body,canvas#c{touch-action:none;-webkit-touch-callout:none;-webkit-tap-high
 <div id="menu" class="overlay">
   <div class="card">
     <div class="logo">How to Fish</div>
-    <p class="sub">مست بودی، قایق رو کوبیدی به یه جزیره‌ی کوچیک… حالا باید یاد بگیری چطور ماهی بگیری!</p>
+    <p class="sub">خوابت برد، قایق رو کوبیدی به یه جزیره‌ی کوچیک… حالا باید یاد بگیری چطور ماهی بگیری!</p>
     <p class="center">ماهی بگیر، بکش، بفروش، تجهیزاتت رو ارتقا بده و پول تعمیر قایق رو جمع کن.</p>
     <div class="keys only-kb">
       <div><b>W A S D</b> حرکت</div><div><b>Shift</b> دویدن</div>
@@ -187,12 +202,14 @@ html,body,canvas#c{touch-action:none;-webkit-touch-callout:none;-webkit-tap-high
       <div><b>نگه‌داشتن کلیک</b> قرقره؛ ماهی تقلا کرد رها کن</div><div><b>E</b> برداشتن ماهی / فروشگاه</div>
       <div><b>۱</b> چوب ماهیگیری</div><div><b>۲</b> سلاح (ماهی رو قبل از فرار بکش)</div>
       <div><b>F</b> ماهی توی دست (کلیک = خوردن / فروختن)</div><div><b>G</b> تنظیمات گرافیک</div>
+      <div><b>T</b> چت</div>
     </div>
     <div class="keys only-touch">
       <div><b>جوی‌استیک چپ</b> حرکت (تا آخر = دویدن)</div><div><b>کشیدن روی صفحه</b> نگاه کردن</div>
       <div><b>دکمه بزرگ</b> نگه‌دار = شارژ پرتاب، رها کن = پرتاب</div><div><b>بکش!</b> وقتی شناور رفت زیر آب بزن</div>
       <div><b>دکمه بزرگ</b> نگه‌داشتن = قرقره؛ ماهی تقلا کرد رها کن</div><div><b>بردار / فروشگاه</b> کنار ماهی یا مغازه ظاهر می‌شه</div>
       <div><b>چوب / سلاح</b> عوض کردن ابزار</div><div><b>پرش</b> بپر</div>
+      <div><b>💬</b> چت با بقیه</div>
     </div>
     <div class="center"><button class="btn" id="startBtn">شروع ماجرا (تک‌نفره)</button></div>
     <div class="center" style="margin-top:10px"><button class="btn teal sm" id="gfxMenuBtn">⚙️ تنظیمات گرافیک</button></div>
@@ -1147,7 +1164,7 @@ try{
       fragmentShader:'uniform sampler2D tDiffuse;uniform float uTime;uniform vec2 uSun;uniform float uSunK;varying vec2 vUv;float hh(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}'+
       'void main(){vec2 c=vUv-0.5;float d2=dot(c,c);vec2 off=c*d2*0.010;'+
       'vec3 col=vec3(texture2D(tDiffuse,vUv+off).r,texture2D(tDiffuse,vUv).g,texture2D(tDiffuse,vUv-off).b);'+
-      'if(uSunK>0.001){vec2 dv=(uSun-vUv)/float(SH);vec2 tc=vUv;float acc=0.0,w=1.0;for(int i=0;i<SH;i++){tc+=dv;vec3 s=texture2D(tDiffuse,tc).rgb;float lm=max(max(s.r,s.g),s.b);acc+=smoothstep(0.92,1.15,lm)*exp(-length(tc-uSun)*2.5)*w;w*=0.94;}col+=vec3(1.0,0.8,0.5)*acc/float(SH)*uSunK*1.1;}'+
+      'if(uSunK>0.001){vec2 dv=(uSun-vUv)/float(SH);float jt=hh(vUv*vec2(933.0,613.0)+fract(uTime)*13.0);vec2 tc=vUv+dv*jt;float acc=0.0,w=1.0;for(int i=0;i<SH;i++){tc+=dv;vec3 s=texture2D(tDiffuse,tc).rgb;float lm=max(max(s.r,s.g),s.b);float sat=lm-min(min(s.r,s.g),s.b);float pure=1.0-smoothstep(0.10,0.32,sat);acc+=smoothstep(0.975,1.22,lm)*pure*exp(-length(tc-uSun)*2.8)*w;w*=0.86;}col+=vec3(1.0,0.85,0.6)*acc/float(SH)*uSunK*0.8;}'+
       'float l=dot(col,vec3(0.299,0.587,0.114));col=mix(vec3(l),col,1.10);'+
       'col*=mix(vec3(0.95,1.0,1.06),vec3(1.05,1.0,0.94),smoothstep(0.15,0.85,l));'+
       'vec3 cc=clamp(col,0.0,1.0);col=mix(col,cc*cc*(3.0-2.0*cc),0.22);'+
@@ -1866,13 +1883,15 @@ function eatFish(i){
   SFX.tick();toast('خوردیش: '+f.def.name+' — سیری +'+fa(gain),'good');
   updateVitals();updateHUD();
 }
-$('invbar').addEventListener('click',e=>{
-  const el=e.target.closest('[data-a]');if(!el||!running())return;const a=el.dataset.a;
+function invbarAct(el){
+  const a=el.dataset.a;
   if(a==='equiprod')equip('rod');
   else if(a==='equipweap')equip('weapon');
-  else if(a==='equipbait'){S.equippedBait=el.dataset.id;updateBaitVisual();renderInvBar();}
   else if(a==='holdfish')holdFish(+el.dataset.i);
-});
+  else if(a==='cyclebait')cycleBait();
+}
+$('invbar').addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el||!running())return;invbarAct(el);});
+$('invbar').addEventListener('touchstart',e=>{const el=e.target.closest('[data-a]');if(!el||!running())return;e.preventDefault();e.stopPropagation();invbarAct(el);},{passive:false});
 function nearestDead(){let best=null,bd=3.4;for(const f of fishes.concat(ghostList())){if(f.state!=='dead')continue;const d=Math.hypot(f.pos.x-player.pos.x,f.pos.z-player.pos.z);if(d<bd){bd=d;best=f;}}return best;}
 function shopWhere(){
   if(Math.hypot(player.pos.x-SHOP_POS.x,player.pos.z-SHOP_POS.z)<4.5)return 1;
@@ -1931,7 +1950,7 @@ function interact(){
   }
   if(nearShop())openShop();
 }
-function openShop(){S.shopIsle=shopWhere()||1;S.shop=true;input.mouse=false;try{document.exitPointerLock();}catch(e){}renderShop();$('shop').classList.remove('hidden');}
+function openShop(){if(CHAT.open)closeChat();S.shopIsle=shopWhere()||1;S.shop=true;input.mouse=false;try{document.exitPointerLock();}catch(e){}renderShop();$('shop').classList.remove('hidden');}
 function closeShop(){S.shop=false;$('shop').classList.add('hidden');requestLock();}
 // محصولات ویژه (فقط فروشگاه جزیره طلایی)
 const PRODUCTS=[
@@ -2133,7 +2152,7 @@ function equip(e){
   if(R.st==='fight'||e===S.equip)return;
   if(e==='weapon'&&R.st!=='idle')resetRod();
   if(e==='rod'&&R.st==='charging')R.st='idle';
-  S.equip=e;input.mouse=false;
+  S.equip=e;input.mouse=false;renderInvBar();
 }
 document.addEventListener('mousemove',e=>{
   if(IS_TOUCH||!running())return;
@@ -2150,10 +2169,12 @@ document.addEventListener('wheel',e=>{if(!IS_TOUCH&&running())equip(S.equip==='r
 document.addEventListener('contextmenu',e=>e.preventDefault());
 window.addEventListener('blur',()=>{input.mouse=false;for(const k in keys)keys[k]=false;});
 document.addEventListener('keydown',e=>{
+  if(document.activeElement&&document.activeElement.tagName==='INPUT')return;
   if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].indexOf(e.code)>=0)e.preventDefault();
   if(e.repeat)return;keys[e.code]=true;
   if(!S.started)return;
   if(e.code==='KeyP'){if(S.paused){S.paused=false;$('pause').classList.add('hidden');}else showPause();return;}
+  if(e.code==='KeyT'){if(CHAT.open)closeChat();else openChat();return;}
   if(S.shop){if(e.code==='KeyE'||e.code==='Escape')closeShop();return;}
   if(!running())return;
   if(e.code==='Digit1')equip('rod');
@@ -2433,16 +2454,24 @@ function baitObj(id){
 }
 function renderInvBar(){
   const box=$('invbar');if(!box)return;
-  let html=`<div class="islot ${S.equip==='rod'?'active':''}" data-a="equiprod"><span class="lab">${ROD[S.rodLv].n}</span>${icoHTML('rod'+S.rodLv,'🎣',()=>rodG.clone(true),'long')}</div>`;
+  const owned=BAITS.filter(b=>S.baits[b.id]);
+  let html='';
+  if(owned.length){
+    const cur=BAIT_BY[S.equippedBait]||owned[0],idx=Math.max(0,owned.indexOf(cur));
+    html+=`<div class="islot baitSlot" data-a="cyclebait"><span class="lab">طعمه: ${cur.n} — بزن تا عوض شه</span>${icoHTML('b'+cur.id,cur.emoji,()=>baitObj(cur.id),'free')}${owned.length>1?`<span class="badge">${fa(idx+1)}/${fa(owned.length)}</span>`:''}</div>`;
+  }
+  html+=`<div class="islot ${S.equip==='rod'?'active':''}" data-a="equiprod"><span class="lab">${ROD[S.rodLv].n}</span>${icoHTML('rod'+S.rodLv,'🎣',()=>rodG.clone(true),'long')}</div>`;
   html+=`<div class="islot ${S.equip==='weapon'?'active':''}" data-a="equipweap"><span class="lab">${WEAPON[S.weaponLv].n}</span>${icoHTML('w'+S.weaponLv,WEAPON_EMOJI[S.weaponLv]||'🔪',()=>wModels[S.weaponLv].clone(true),'long')}</div>`;
-  BAITS.forEach(b=>{
-    if(!S.baits[b.id])return;
-    html+=`<div class="islot ${S.equippedBait===b.id?'active':''}" data-a="equipbait" data-id="${b.id}"><span class="lab">${b.n}${S.equippedBait===b.id?' (سوار)':''}</span>${icoHTML('b'+b.id,b.emoji,()=>baitObj(b.id),'free')}</div>`;
-  });
   S.inv.forEach((f,i)=>{
     html+=`<div class="islot ${S.equip==='fish'&&S.heldRef===f?'active':''}" data-a="holdfish" data-i="${i}"><span class="lab">توی دست بگیر: ${f.def.name}</span>${icoHTML('f'+f.def.id+(f.rare?'r':''),'🐟',()=>buildFish(f.def,f.rare).g,'free')}<span class="badge">${fa(f.value)}$</span></div>`;
   });
   box.innerHTML=html;
+}
+function cycleBait(){
+  const owned=BAITS.filter(b=>S.baits[b.id]);if(!owned.length)return;
+  const i=Math.max(0,owned.findIndex(b=>b.id===S.equippedBait));
+  const next=owned[(i+1)%owned.length];
+  S.equippedBait=next.id;updateBaitVisual();toast('طعمه‌ی سوار شده: '+next.n);renderInvBar();
 }
 
 /* ================= hold a fish in hand: eat / sell ================= */
@@ -2524,6 +2553,7 @@ function netRecv(s){
           if(def){S.inv.push({def:def,rare:!!d.r,value:d.v,tricks:d.t||''});SFX.tick();toast(def.name+' توی یخدان رفت.');updateHUD();}}
         break;
       case 'fpno':if(d.to===MP.myId){NET.pending=null;ghostKill(d.n);}break;
+      case 'chat':chatReceive(d.u||'ماهیگیر',String(d.m||'').slice(0,200));break;
       case 'gs':NET.gs=d;break;
       case 'gh':if(isGullOwner())hitGull(d.d,true);break;
       case 'fh':{const f=fishes.find(x=>x.nid===d.n);if(f&&f.state==='alive')hitFish(f,{dmg:d.d,ranged:!!d.r},d.ds||0,d.x,d.z);break;}
@@ -2709,6 +2739,7 @@ function gfxPreset(n){Object.assign(GQ,GQ_PRESETS[n],{preset:n});gfxApply();gfxS
 function gfxSet(k,v){GQ[k]=v;GQ.preset=gfxDetect();gfxApply();gfxSave();gfxRender();}
 function openGfx(){
   const g=$('gfx');if(!g||!g.classList.contains('hidden'))return;
+  if(CHAT.open)closeChat();
   GFX.wasPaused=S.paused;
   GFX.gfxOnline=!!(MP.connected&&MP.room);   // online: the world keeps running for everyone, only single-player pauses
   if(S.started&&!S.won&&!S.shop){if(!GFX.gfxOnline)S.paused=true;input.mouse=false;try{document.exitPointerLock();}catch(e){}}
@@ -2732,6 +2763,7 @@ $('gfxMenuBtn').addEventListener('click',openGfx);
 $('gfxPauseBtn').addEventListener('click',openGfx);
 document.addEventListener('keydown',e=>{
   if(e.code==='Escape'&&!$('gfx').classList.contains('hidden')){closeGfx();return;}
+  if(e.code==='Escape'&&CHAT.open){closeChat();return;}
   if(e.code==='KeyG'&&S.started&&!S.won&&!S.shop&&$('gfx').classList.contains('hidden')&&!(document.activeElement&&document.activeElement.tagName==='INPUT'))openGfx();
 });
 // per-frame: shadow throttling for the medium preset, FPS meter, and a one-time "lower the graphics" hint
@@ -2752,6 +2784,49 @@ GFX.upd.push(function(){
   GFX.lastT=now;
 });
 gfxApply();
+
+/* ================= text chat ================= */
+const CHAT={open:false,unread:0,wasPaused:false,online:false};
+function chatEsc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function chatRenderMsg(u,m){
+  const box=$('chatMsgs');if(!box)return;const row=document.createElement('div');row.className='chatMsg';
+  row.innerHTML='<b>'+chatEsc(u)+':</b> '+chatEsc(m);
+  box.appendChild(row);while(box.children.length>60)box.removeChild(box.firstChild);
+  box.scrollTop=box.scrollHeight;
+}
+function chatReceive(u,m){
+  chatRenderMsg(u,m);
+  if(!CHAT.open){CHAT.unread++;const b=$('chatBadge');if(b){b.textContent=fa(Math.min(CHAT.unread,99));b.classList.remove('hidden');}}
+}
+function sendChat(){
+  const inp=$('chatInput');if(!inp)return;const v=inp.value.trim();inp.value='';if(!v)return;
+  const name=getUsername()||'ماهیگیر';
+  chatRenderMsg(name,v);
+  if(inRoom())netSend('chat',{u:name,m:v.slice(0,140)});
+}
+function openChat(){
+  if(CHAT.open)return;
+  if(!$('gfx').classList.contains('hidden'))closeGfx();
+  CHAT.open=true;CHAT.wasPaused=S.paused;CHAT.online=!!(MP.connected&&MP.room);
+  if(S.started&&!S.won&&!S.shop){if(!CHAT.online)S.paused=true;input.mouse=false;for(const k in keys)keys[k]=false;try{document.exitPointerLock();}catch(e){}}
+  CHAT.unread=0;const b=$('chatBadge');if(b)b.classList.add('hidden');
+  $('chatPanel').classList.remove('hidden');
+  setTimeout(()=>{const i=$('chatInput');if(i)i.focus();},0);
+}
+function closeChat(){
+  if(!CHAT.open)return;
+  CHAT.open=false;$('chatPanel').classList.add('hidden');const i=$('chatInput');if(i)i.blur();
+  const on=CHAT.online;
+  if(S.started&&!S.won&&!S.shop&&!CHAT.wasPaused){if(!on)S.paused=false;requestLock();}
+}
+$('chatBtn').addEventListener('click',()=>{if(CHAT.open)closeChat();else openChat();});
+$('chatSend').addEventListener('click',sendChat);
+$('chatInput').addEventListener('keydown',e=>{
+  e.stopPropagation();
+  if(e.key==='Enter'){e.preventDefault();sendChat();}
+  else if(e.key==='Escape'){e.preventDefault();closeChat();}
+});
+$('chatInput').addEventListener('keyup',e=>e.stopPropagation());
 
 /* ============ main loop ============ */
 const clock=new THREE.Clock();
