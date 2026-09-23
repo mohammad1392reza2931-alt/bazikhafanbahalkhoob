@@ -91,8 +91,9 @@ export class Dock {
   constructor(state, env) {
     this.state = state;
     this.env = env;
-    this.rooms = new Map(); // code -> { max, sockets: Map(playerId -> ws), started, msgSeq, recentMsgs: Map(mid -> {pid,uname,text,at}) }
+    this.rooms = new Map(); // code -> { max, sockets: Map(playerId -> ws), started, msgSeq, recentMsgs: Map(mid -> {pid,uname,text,at}), public, name }
     this.adminSockets = new Set();
+    this.lobbySockets = new Set(); // sockets currently browsing the public-server list (not yet in a room)
     this.banned = new Map(); // pid -> {uname, ip, reason, at}
     this.reports = []; // recent reports, newest first
     this.state.blockConcurrencyWhile(async () => {
@@ -144,6 +145,19 @@ export class Dock {
   broadcastAdmins(msg) {
     const str = JSON.stringify(msg);
     this.adminSockets.forEach((sock) => { try { sock.send(str); } catch (e) {} });
+  }
+
+  publicRoomsList() {
+    const out = [];
+    this.rooms.forEach((room, code) => {
+      if (room.public) out.push({ code, name: room.name || code, count: room.sockets.size, max: room.max });
+    });
+    return out;
+  }
+
+  broadcastPublicList() {
+    const str = JSON.stringify({ type: "publicList", rooms: this.publicRoomsList() });
+    this.lobbySockets.forEach((sock) => { try { sock.send(str); } catch (e) {} });
   }
 
   findBan(pid, ip) {
@@ -216,15 +230,25 @@ export class Dock {
       ws._uname = uname;
     }
 
+    if (msg.type === "listPublic") {
+      this.lobbySockets.add(ws);
+      ws.send(JSON.stringify({ type: "publicList", rooms: this.publicRoomsList() }));
+      return;
+    }
+
     if (msg.type === "host") {
       const code = this.genCode();
       const max = Math.max(2, Math.min(8, Number(msg.max) || 8));
-      const room = { max, sockets: new Map(), started: false, msgSeq: 0, recentMsgs: new Map() };
+      const isPublic = !!msg.pub;
+      const name = isPublic ? (String(msg.name || "").trim().slice(0, 24) || ("اتاق " + ws._uname)) : "";
+      const room = { max, sockets: new Map(), started: false, msgSeq: 0, recentMsgs: new Map(), public: isPublic, name };
       room.sockets.set(0, ws);
       ws._roomCode = code;
       ws._playerId = 0;
       this.rooms.set(code, room);
-      ws.send(JSON.stringify({ type: "hosted", code, playerId: 0, max }));
+      this.lobbySockets.delete(ws);
+      ws.send(JSON.stringify({ type: "hosted", code, playerId: 0, max, public: isPublic, name }));
+      if (isPublic) this.broadcastPublicList();
       return;
     }
 
@@ -241,8 +265,10 @@ export class Dock {
       room.sockets.set(playerId, ws);
       ws._roomCode = code;
       ws._playerId = playerId;
+      this.lobbySockets.delete(ws);
       ws.send(JSON.stringify({ type: "joined", playerId, count: room.sockets.size, max: room.max }));
       this.broadcastRoom(room, { type: "playerJoined", playerId, count: room.sockets.size, max: room.max, uname: ws._uname }, playerId);
+      if (room.public) this.broadcastPublicList();
       if (!room.started) {
         room.started = true;
         const names = {};
@@ -256,6 +282,16 @@ export class Dock {
 
     const room = this.rooms.get(ws._roomCode);
     if (!room) return;
+
+    if (msg.type === "renameServer") {
+      if (ws._playerId !== 0 || !room.public) return;
+      const name = String(msg.name || "").trim().slice(0, 24);
+      if (!name) return;
+      room.name = name;
+      this.broadcastRoom(room, { type: "serverRenamed", name }, -1);
+      this.broadcastPublicList();
+      return;
+    }
 
     if (msg.type === "chat") {
       const text = String(msg.m || "").slice(0, 140).trim();
@@ -302,10 +338,13 @@ export class Dock {
 
   onClose(ws) {
     this.adminSockets.delete(ws);
+    this.lobbySockets.delete(ws);
     const room = this.rooms.get(ws._roomCode);
     if (!room) return;
+    const wasPublic = room.public;
     room.sockets.delete(ws._playerId);
     this.broadcastRoom(room, { type: "playerLeft", playerId: ws._playerId }, ws._playerId);
     if (room.sockets.size === 0) this.rooms.delete(ws._roomCode);
+    if (wasPublic) this.broadcastPublicList();
   }
 }
