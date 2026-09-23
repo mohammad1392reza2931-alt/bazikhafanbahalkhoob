@@ -162,6 +162,9 @@ html,body,canvas#c{touch-action:none;-webkit-touch-callout:none;-webkit-tap-high
 #chatSend{background:var(--coral);color:#fff;border:2px solid var(--ink);border-radius:8px;padding:0 12px;font-weight:900;cursor:pointer;font-size:13px}
 .islot.baitSlot{border-color:var(--teal);margin-left:14px}
 .touch .islot.baitSlot{margin-left:9px}
+#mpLobby .card{max-width:440px}
+.mpLobbyRow{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#0000000f;border:2px solid var(--ink);border-radius:10px;padding:8px 12px;font-weight:800}
+.mpLobbyRow .kickBtn{background:var(--coral);color:#fff;border:2px solid var(--ink);border-radius:8px;padding:4px 10px;font:inherit;font-weight:900;font-size:12px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -255,6 +258,16 @@ html,body,canvas#c{touch-action:none;-webkit-touch-callout:none;-webkit-tap-high
   </div>
 </div>
 
+<div id="mpLobby" class="overlay hidden">
+  <div class="card center">
+    <h2 id="mpLobbyTitle">🎣 لابی سرور</h2>
+    <p id="mpLobbyCode" class="muted" style="font-size:14px"></p>
+    <ul id="mpLobbyList" style="list-style:none;margin:14px 0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;text-align:right"></ul>
+    <div id="mpLobbyHostRow" class="center hidden"><button class="btn" id="mpLobbyStartBtn">شروع بازی 🎣</button></div>
+    <p id="mpLobbyWaitMsg" class="muted center hidden" style="font-size:13px">منتظر میزبان برای شروع بازی...</p>
+    <div class="center" style="margin-top:10px"><button class="btn sm" id="mpLobbyLeaveBtn">خروج از لابی</button></div>
+  </div>
+</div>
 <div id="lb" class="overlay hidden">
   <div class="card center">
     <h2>🏆 جدول امتیازات (بهترین دارایی)</h2>
@@ -2094,7 +2107,7 @@ function getPid(){let p;try{p=localStorage.getItem(PID_KEY);}catch(e){}
   if(!p){p=(self.crypto&&crypto.randomUUID)?crypto.randomUUID():(Date.now().toString(36)+Math.random().toString(36).slice(2));try{localStorage.setItem(PID_KEY,p);}catch(e){}}
   return p;}
 const NET={n:0,last:{},ghosts:new Map(),applying:false,synced:false,boatBy:null,boatT:null,gs:null,bt:0,gt:0,ft:0,hadFish:false,wasOnBoat:false,fc:0,pending:null,pendT:0,eqKey:'',eqT:0,eqPending:{}};
-const MP={ws:null,room:null,myId:null,max:8,connected:false,isHost:false,isPublic:false,pendingCode:null};
+const MP={ws:null,room:null,myId:null,max:8,connected:false,isHost:false,isPublic:false,pendingCode:null,lobbyPlayers:new Map(),roomName:''};
 const remotePlayers=new Map();
 function remoteMat(hue){return new THREE.MeshStandardMaterial({color:new THREE.Color().setHSL(hue,.62,.52),flatShading:true,roughness:.8});}
 function makeNameSprite(text){
@@ -2132,25 +2145,61 @@ function mpConnect(onOpen){
   ws.onmessage=ev=>{
     let m;try{m=JSON.parse(ev.data);}catch(e){return;}
     if(m.type==='ping'){mpSend({type:'pong'});}
-    else if(m.type==='hosted'){MP.room=m.code;MP.myId=m.playerId;MP.isHost=true;MP.isPublic=!!m.public;
+    else if(m.type==='hosted'){MP.room=m.code;MP.myId=m.playerId;MP.isHost=true;MP.isPublic=!!m.public;MP.roomName=m.name||'';
       $('mpStatus').textContent='کد اتاق: '+m.code+(m.public?' — سرور عمومی «'+m.name+'» — دوستات می‌تونن از لیست هم پیداش کنن!':' — این کد رو به دوستات بده!');
       if(m.public){$('renameRow').classList.remove('hidden');$('mpNewName').value=m.name||'';}
-      updateMPHud(1,MP.max);beginMPPlay();}
-    else if(m.type==='joined'){MP.myId=m.playerId;MP.max=m.max;MP.room=(MP.pendingCode||$('mpCode').value).trim().toUpperCase();MP.isHost=false;$('mpStatus').textContent='وارد اتاق شدی، منتظر بقیه...';updateMPHud(m.count,m.max);beginMPPlay();}
+      updateMPHud(1,MP.max);
+      MP.lobbyPlayers=new Map((m.roster||[]).map(p=>[p.id,p.uname||('بازیکن '+(p.id+1))]));
+      if(MP.isPublic)showLobby();else beginMPPlay();}
+    else if(m.type==='joined'){MP.myId=m.playerId;MP.max=m.max;MP.room=(MP.pendingCode||$('mpCode').value).trim().toUpperCase();MP.isHost=false;MP.isPublic=!!m.public;$('mpStatus').textContent='وارد اتاق شدی، منتظر بقیه...';updateMPHud(m.count,m.max);
+      MP.lobbyPlayers=new Map((m.roster||[]).map(p=>[p.id,p.uname||('بازیکن '+(p.id+1))]));
+      if(m.public&&!m.started)showLobby();else beginMPPlay();}
     else if(m.type==='error'){$('mpStatus').textContent=m.reason==='not-found'?'کد اتاق پیدا نشد.':m.reason==='banned'?('از بازی چندنفره بن شدی.'+(m.message?(' دلیل: '+m.message):'')):'اتاق پره!';}
-    else if(m.type==='kicked'){toast('از بازی چندنفره اخراج شدی'+(m.reason?(': '+m.reason):'')+'.','bad');try{ws.close();}catch(e){}MP.room=null;}
+    else if(m.type==='kicked'){toast('از بازی چندنفره اخراج شدی'+(m.reason?(': '+m.reason):'')+'.','bad');try{ws.close();}catch(e){}MP.room=null;
+      if(!$('mpLobby').classList.contains('hidden')){$('mpLobby').classList.add('hidden');$('menu').classList.remove('hidden');}}
     else if(m.type==='chatRejected'){toast('پیام شامل کلمات نامناسب بود و ارسال نشد.','bad');}
     else if(m.type==='chat'){chatReceive(m.u||'ماهیگیر',String(m.m||'').slice(0,200),m.mid,m.from);}
     else if(m.type==='serverRenamed'){toast('اسم سرور شد: '+m.name,'good');}
     else if(m.type==='publicList'){renderPublicServers(m.rooms||[]);}
-    else if(m.type==='playerJoined'){toast('یه دوست به بازی پیوست! ('+m.count+'/'+m.max+')','good');updateMPHud(m.count,m.max);addRemote(m.playerId,m.uname||('بازیکن '+(m.playerId+1)));if(isGullOwner())setTimeout(netSendSync,700);}
-    else if(m.type==='playerLeft'){toast('یکی از دوستات از بازی رفت.','bad');removeRemote(m.playerId);}
-    else if(m.type==='start'){toast('بازی چندنفره شروع شد! برید بگردید و ماهی بگیرید 🎣','good');m.players.forEach(pid=>{if(pid!==MP.myId)addRemote(pid,(m.names&&m.names[pid])||('بازیکن '+(pid+1)));});}
+    else if(m.type==='playerJoined'){toast('یه دوست به بازی پیوست! ('+m.count+'/'+m.max+')','good');updateMPHud(m.count,m.max);addRemote(m.playerId,m.uname||('بازیکن '+(m.playerId+1)));
+      if(!$('mpLobby').classList.contains('hidden')){MP.lobbyPlayers.set(m.playerId,m.uname||('بازیکن '+(m.playerId+1)));renderLobbyList();}
+      if(isGullOwner())setTimeout(netSendSync,700);}
+    else if(m.type==='playerLeft'){toast('یکی از دوستات از بازی رفت.','bad');removeRemote(m.playerId);
+      if(!$('mpLobby').classList.contains('hidden')){MP.lobbyPlayers.delete(m.playerId);renderLobbyList();}}
+    else if(m.type==='start'){if(!$('mpLobby').classList.contains('hidden')){$('mpLobby').classList.add('hidden');beginMPPlay();}toast('بازی چندنفره شروع شد! برید بگردید و ماهی بگیرید 🎣','good');m.players.forEach(pid=>{if(pid!==MP.myId)addRemote(pid,(m.names&&m.names[pid])||('بازیکن '+(pid+1)));});}
     else if(m.type==='state'){const r=remotePlayers.get(m.from);if(r){r.tx=m.x;r.ty=m.y;r.tz=m.z;r.tyaw=m.yaw;}else addRemote(m.from,'بازیکن '+(m.from+1));}
     else if(m.type==='catch'){if(typeof m.name==='string'&&m.name.slice(0,2)==='@@')netRecv(m.name.slice(2));else toast(`${m.name} یک ${m.fish} گرفت! (+${fa(m.value)} $)`,'good');}
     else if(m.type==='net'){netRecv(m.p);}
   };
 }
+function renderLobbyList(){
+  const ul=$('mpLobbyList');if(!ul)return;ul.innerHTML='';
+  MP.lobbyPlayers.forEach((uname,pid)=>{
+    const li=document.createElement('li');li.className='mpLobbyRow';
+    li.innerHTML='<span>'+(pid===0?'👑 ':'🎣 ')+chatEsc(uname)+'</span>';
+    if(MP.isHost&&pid!==0){
+      const b=document.createElement('button');b.className='kickBtn';b.textContent='اخراج';
+      b.onclick=()=>{if(confirm(uname+' رو از سرور بیرون بندازم؟'))mpSend({type:'kick',playerId:pid});};
+      li.appendChild(b);
+    }
+    ul.appendChild(li);
+  });
+}
+function showLobby(){
+  $('menu').classList.add('hidden');$('mpLobby').classList.remove('hidden');
+  $('mpLobbyTitle').textContent=MP.isHost?'🎣 لابی سرور — '+chatEsc(MP.roomName||MP.room):'🎣 در انتظار شروع بازی';
+  $('mpLobbyCode').textContent='کد اتاق: '+MP.room;
+  $('mpLobbyHostRow').classList.toggle('hidden',!MP.isHost);
+  $('mpLobbyWaitMsg').classList.toggle('hidden',MP.isHost);
+  renderLobbyList();
+}
+function leaveLobby(){
+  try{MP.ws&&MP.ws.close();}catch(e){}
+  MP.room=null;MP.lobbyPlayers=new Map();
+  $('mpLobby').classList.add('hidden');$('menu').classList.remove('hidden');
+}
+$('mpLobbyStartBtn').onclick=()=>mpSend({type:'startGame'});
+$('mpLobbyLeaveBtn').onclick=leaveLobby;
 function beginMPPlay(){
   $('menu').classList.add('hidden');$('hud').classList.remove('hidden');
   if(!S.started){ac();if(IS_TOUCH){S.noLock=true;goFull();}S.started=true;S.paused=false;requestLock();updateHUD();toast('برو سمت اسکله (جلوت) و قلاب بنداز!');}
