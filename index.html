@@ -229,12 +229,28 @@ html,body,canvas#c{touch-action:none;-webkit-touch-callout:none;-webkit-tap-high
         <input id="mpName" maxlength="14" placeholder="اسمت..." style="font:inherit;font-weight:800;padding:9px 12px;border:3px solid var(--ink);border-radius:10px;width:100%">
         <input id="mpCode" maxlength="5" placeholder="کد اتاق (برای پیوستن)" style="font:inherit;font-weight:800;padding:9px 12px;border:3px solid var(--ink);border-radius:10px;width:100%;text-transform:uppercase">
       </div>
+      <div class="grid2" style="gap:10px;margin-top:8px">
+        <input id="mpServerName" maxlength="24" placeholder="اسم سرور (اگه عمومیه)" style="font:inherit;font-weight:800;padding:9px 12px;border:3px solid var(--ink);border-radius:10px;width:100%">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:800;padding:6px 4px;user-select:none;cursor:pointer">
+          <input type="checkbox" id="mpPublic" style="width:18px;height:18px;flex:none">
+          <span>سرور عمومی (بدون رمز، توی لیست پایین دیده می‌شه)</span>
+        </label>
+      </div>
       <div class="center" style="margin-top:10px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
         <button class="btn teal sm" id="hostBtn">میزبانی بازی جدید</button>
         <button class="btn teal sm" id="joinBtn">پیوستن با کد</button>
         <button class="btn gold sm" id="lbBtn">🏆 جدول امتیازات</button>
       </div>
       <p id="mpStatus" class="muted center" style="margin-top:8px;font-size:13px"></p>
+      <div id="renameRow" class="center hidden" style="margin-top:6px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+        <input id="mpNewName" maxlength="24" placeholder="اسم جدید سرور" style="font:inherit;font-weight:800;padding:7px 10px;border:3px solid var(--ink);border-radius:10px">
+        <button class="btn teal sm" id="renameBtn">عوض کردن اسم سرور</button>
+      </div>
+    </div>
+    <div style="margin-top:18px;border-top:2px dashed #14262e33;padding-top:14px">
+      <h2 class="center" style="margin-bottom:8px">🌐 سرورهای عمومی</h2>
+      <ul id="publicServersList" style="list-style:none;margin:10px 0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto"></ul>
+      <p id="publicServersEmpty" class="muted center" style="font-size:13px">در حال بارگذاری لیست سرورها...</p>
     </div>
   </div>
 </div>
@@ -2078,7 +2094,7 @@ function getPid(){let p;try{p=localStorage.getItem(PID_KEY);}catch(e){}
   if(!p){p=(self.crypto&&crypto.randomUUID)?crypto.randomUUID():(Date.now().toString(36)+Math.random().toString(36).slice(2));try{localStorage.setItem(PID_KEY,p);}catch(e){}}
   return p;}
 const NET={n:0,last:{},ghosts:new Map(),applying:false,synced:false,boatBy:null,boatT:null,gs:null,bt:0,gt:0,ft:0,hadFish:false,wasOnBoat:false,fc:0,pending:null,pendT:0,eqKey:'',eqT:0,eqPending:{}};
-const MP={ws:null,room:null,myId:null,max:8,connected:false};
+const MP={ws:null,room:null,myId:null,max:8,connected:false,isHost:false,isPublic:false,pendingCode:null};
 const remotePlayers=new Map();
 function remoteMat(hue){return new THREE.MeshStandardMaterial({color:new THREE.Color().setHSL(hue,.62,.52),flatShading:true,roughness:.8});}
 function makeNameSprite(text){
@@ -2115,12 +2131,17 @@ function mpConnect(onOpen){
   ws.onerror=()=>{$('mpStatus').textContent='اتصال به سرور چندنفره برقرار نشد. آدرس Worker رو چک کن.';};
   ws.onmessage=ev=>{
     let m;try{m=JSON.parse(ev.data);}catch(e){return;}
-    if(m.type==='hosted'){MP.room=m.code;MP.myId=m.playerId;$('mpStatus').textContent='کد اتاق: '+m.code+' — این کد رو به دوستات بده!';updateMPHud(1,MP.max);beginMPPlay();}
-    else if(m.type==='joined'){MP.myId=m.playerId;MP.max=m.max;MP.room=$('mpCode').value.trim().toUpperCase();$('mpStatus').textContent='وارد اتاق شدی، منتظر بقیه...';updateMPHud(m.count,m.max);beginMPPlay();}
+    if(m.type==='hosted'){MP.room=m.code;MP.myId=m.playerId;MP.isHost=true;MP.isPublic=!!m.public;
+      $('mpStatus').textContent='کد اتاق: '+m.code+(m.public?' — سرور عمومی «'+m.name+'» — دوستات می‌تونن از لیست هم پیداش کنن!':' — این کد رو به دوستات بده!');
+      if(m.public){$('renameRow').classList.remove('hidden');$('mpNewName').value=m.name||'';}
+      updateMPHud(1,MP.max);beginMPPlay();}
+    else if(m.type==='joined'){MP.myId=m.playerId;MP.max=m.max;MP.room=(MP.pendingCode||$('mpCode').value).trim().toUpperCase();MP.isHost=false;$('mpStatus').textContent='وارد اتاق شدی، منتظر بقیه...';updateMPHud(m.count,m.max);beginMPPlay();}
     else if(m.type==='error'){$('mpStatus').textContent=m.reason==='not-found'?'کد اتاق پیدا نشد.':m.reason==='banned'?('از بازی چندنفره بن شدی.'+(m.message?(' دلیل: '+m.message):'')):'اتاق پره!';}
     else if(m.type==='kicked'){toast('از بازی چندنفره اخراج شدی'+(m.reason?(': '+m.reason):'')+'.','bad');try{ws.close();}catch(e){}MP.room=null;}
     else if(m.type==='chatRejected'){toast('پیام شامل کلمات نامناسب بود و ارسال نشد.','bad');}
     else if(m.type==='chat'){chatReceive(m.u||'ماهیگیر',String(m.m||'').slice(0,200),m.mid,m.from);}
+    else if(m.type==='serverRenamed'){toast('اسم سرور شد: '+m.name,'good');}
+    else if(m.type==='publicList'){renderPublicServers(m.rooms||[]);}
     else if(m.type==='playerJoined'){toast('یه دوست به بازی پیوست! ('+m.count+'/'+m.max+')','good');updateMPHud(m.count,m.max);addRemote(m.playerId,m.uname||('بازیکن '+(m.playerId+1)));if(isGullOwner())setTimeout(netSendSync,700);}
     else if(m.type==='playerLeft'){toast('یکی از دوستات از بازی رفت.','bad');removeRemote(m.playerId);}
     else if(m.type==='start'){toast('بازی چندنفره شروع شد! برید بگردید و ماهی بگیرید 🎣','good');m.players.forEach(pid=>{if(pid!==MP.myId)addRemote(pid,(m.names&&m.names[pid])||('بازیکن '+(pid+1)));});}
@@ -2135,14 +2156,42 @@ function beginMPPlay(){
 }
 $('hostBtn').onclick=()=>{
   const uname=($('mpName').value||'ماهیگیر').trim().slice(0,14)||'ماهیگیر';setUsername(uname);
-  $('mpStatus').textContent='در حال اتصال...';mpConnect(()=>mpSend({type:'host',max:8,pid:getPid(),uname}));
+  const isPublic=!!$('mpPublic').checked;
+  const sname=($('mpServerName').value||'').trim().slice(0,24)||('اتاق '+uname);
+  $('mpStatus').textContent='در حال اتصال...';
+  mpConnect(()=>mpSend({type:'host',max:8,pid:getPid(),uname,pub:isPublic?1:0,name:sname}));
 };
-$('joinBtn').onclick=()=>{
+function doJoin(codeOverride){
   const uname=($('mpName').value||'ماهیگیر').trim().slice(0,14)||'ماهیگیر';setUsername(uname);
-  const code=($('mpCode').value||'').trim().toUpperCase();
-  if(!code){$('mpStatus').textContent='اول کد اتاق رو وارد کن.';return;}
+  const code=(codeOverride||$('mpCode').value||'').trim().toUpperCase();
+  if(!code){$('mpStatus').textContent='اول کد اتاق رو وارد کن یا از لیست سرورهای عمومی یکی رو انتخاب کن.';return;}
+  MP.pendingCode=code;
   $('mpStatus').textContent='در حال اتصال...';mpConnect(()=>mpSend({type:'join',code,pid:getPid(),uname}));
+}
+$('joinBtn').onclick=()=>doJoin();
+$('renameBtn').onclick=()=>{
+  const name=($('mpNewName').value||'').trim().slice(0,24);
+  if(!name){toast('یه اسم برای سرور بنویس.','bad');return;}
+  mpSend({type:'renameServer',name});
 };
+function renderPublicServers(rooms){
+  const ul=$('publicServersList'),empty=$('publicServersEmpty');if(!ul)return;
+  ul.innerHTML='';
+  if(!rooms.length){empty.textContent='هیچ سرور عمومی‌ای الان باز نیست. یکی بساز!';empty.classList.remove('hidden');return;}
+  empty.classList.add('hidden');
+  rooms.forEach(r=>{
+    const li=document.createElement('li');
+    li.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:10px;background:#0000000f;border:2px solid var(--ink);border-radius:10px;padding:8px 12px;font-weight:800';
+    const full=r.count>=r.max;
+    li.innerHTML='<span>🌐 '+chatEsc(r.name)+' <span class="muted" style="font-weight:700;font-size:12px">('+fa(r.count)+'/'+fa(r.max)+')</span></span>';
+    const btn=document.createElement('button');btn.className='btn teal sm';btn.textContent=full?'پره':'پیوستن';
+    if(full)btn.disabled=true;else btn.onclick=()=>doJoin(r.code);
+    li.appendChild(btn);ul.appendChild(li);
+  });
+}
+function refreshPublicServers(){if(MP.room)return;mpConnect(()=>mpSend({type:'listPublic'}));}
+refreshPublicServers();
+setInterval(()=>{if(!$('menu').classList.contains('hidden'))refreshPublicServers();},6000);
 (function initUname(){const u=getUsername();if(u)$('mpName').value=u;})();
 async function submitScore(){
   const u=getUsername();if(!u)return;
