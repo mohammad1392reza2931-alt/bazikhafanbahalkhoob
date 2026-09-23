@@ -149,6 +149,14 @@ html,body,canvas#c{touch-action:none;-webkit-touch-callout:none;-webkit-tap-high
 #chatMsgs{flex:1;overflow-y:auto;padding:8px 10px;display:flex;flex-direction:column;gap:5px;font-size:13px;color:#fff}
 .chatMsg{word-break:break-word;line-height:1.35}
 .chatMsg b{color:var(--sun);font-weight:900}
+.chatReportBtn{background:none;border:none;cursor:pointer;font-size:12px;opacity:.55;padding:0 2px;vertical-align:middle}
+.chatReportBtn:hover{opacity:1}
+.chatReportBtn:disabled{opacity:.4;cursor:default}
+#chatToasts{position:absolute;top:calc(10px + env(safe-area-inset-top));right:14px;width:280px;display:flex;flex-direction:column;gap:8px;pointer-events:none;z-index:60}
+.touch #chatToasts{top:calc(56px + env(safe-area-inset-top));right:calc(10px + env(safe-area-inset-right));width:200px}
+.glassToast{background:rgba(20,38,46,.42);backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%);border:1px solid rgba(255,255,255,.28);border-radius:12px;padding:8px 12px;color:#fff;font-size:13px;line-height:1.35;box-shadow:0 4px 18px rgba(0,0,0,.28);opacity:0;transform:translateY(-10px);transition:opacity .22s ease,transform .22s ease;word-break:break-word}
+.glassToast.show{opacity:1;transform:translateY(0)}
+.glassToast b{color:var(--sun);font-weight:900;margin-left:4px}
 #chatRow{display:flex;gap:6px;padding:7px;border-top:2px solid rgba(255,255,255,.18)}
 #chatInput{flex:1;min-width:0;border-radius:8px;border:2px solid var(--ink);padding:6px 8px;font:inherit;font-size:13px;background:#fff;color:var(--ink)}
 #chatSend{background:var(--coral);color:#fff;border:2px solid var(--ink);border-radius:8px;padding:0 12px;font-weight:900;cursor:pointer;font-size:13px}
@@ -170,6 +178,7 @@ html,body,canvas#c{touch-action:none;-webkit-touch-callout:none;-webkit-tap-high
   <div id="invbar"></div>
   <div id="gearBtn" title="تنظیمات گرافیک (G)">⚙</div>
   <div id="chatBtn" title="چت (T)">💬<span id="chatBadge" class="hidden">۰</span></div>
+  <div id="chatToasts"></div>
   <div id="chatPanel" class="hidden"><div id="chatMsgs"></div><div id="chatRow"><input id="chatInput" maxlength="140" placeholder="پیام بنویس..."><button id="chatSend">ارسال</button></div></div>
   <div id="mpHud" class="pill stroke hidden" style="top:138px;right:18px;font-size:14px">👥 <b id="mpHudV"></b></div>
   <div id="goal" class="stroke">هدف: تعمیر قایق و رفتن به جزیره طلایی<div class="track"><div class="fill" id="goalFill"></div></div></div>
@@ -1414,7 +1423,9 @@ const SHOP_POS2={x:ISLE2.x-7.6,z:ISLE2.z+5};
 for(const p of[[-8,8.6],[-7.2,9.4]]){const b=new THREE.Mesh(new THREE.CylinderGeometry(.5,.5,1.1,36),M(0xb35a2a));b.position.set(ISLE2.x+p[0],1.55,ISLE2.z+p[1]);b.visible=false;scene.add(b);barrelNew(ISLE2.x+p[0],ISLE2.z+p[1]);colliders.push({x:ISLE2.x+p[0],z:ISLE2.z+p[1],r:.6});}
 
 /* ============ player & viewmodels ============ */
-const player={pos:V3(0,1,12),vx:0,vz:0,vy:0,yaw:Math.PI,pitch:-.05,onGround:true,bob:0,onBoat:false};
+const player={pos:V3(0,1,12),vx:0,vz:0,vy:0,yaw:Math.PI,pitch:-.05,onGround:true,bob:0,onBoat:false,isDriver:false,seat:null};
+const BOAT_SEATS=[{r:-1,f:-.6},{r:1,f:-.6},{r:0,f:-1.9},{r:-1,f:-1.9},{r:1,f:-1.9}];
+function seatFor(id){return BOAT_SEATS[(id==null?0:id)%BOAT_SEATS.length];}
 const boatState={x:14,z:-6,yaw:.7};
 let shake=0;
 const rodG=new THREE.Group();camera.add(rodG);rodG.position.set(.32,-.3,-.45);
@@ -1777,7 +1788,7 @@ function updatePlayer(dt){
   if(k.KeyW)mz+=1;if(k.KeyS)mz-=1;if(k.KeyD)mx+=1;if(k.KeyA)mx-=1;
   if(IS_TOUCH){mx+=TJ.x;mz-=TJ.y;}
   const l=Math.hypot(mx,mz);if(l>1){mx/=l;mz/=l;}
-  if(player.onBoat){
+  if(player.onBoat&&player.isDriver){
     const sp=(k.ShiftLeft||k.ShiftRight||TJ.sprint)?20:13;
     const yaw=player.yaw,fx=-Math.sin(yaw),fz=-Math.cos(yaw),rx=Math.cos(yaw),rz=-Math.sin(yaw);
     const wxv=(fx*mz+rx*mx*.3)*sp,wzv=(fz*mz+rz*mx*.3)*sp,a=1-Math.exp(-3*dt);
@@ -1788,6 +1799,12 @@ function updatePlayer(dt){
     boatState.x=player.pos.x;boatState.z=player.pos.z;boatState.yaw=player.yaw;
     boat.position.set(player.pos.x,surfaceY(player.pos.x,player.pos.z)+.5,player.pos.z);
     boat.rotation.set(Math.sin(WT*1.1)*.02,player.yaw,Math.sin(WT*1.4)*.04);
+  }else if(player.onBoat&&!player.isDriver){
+    const seat=player.seat||seatFor(MP.myId),yaw=boatState.yaw,fx=-Math.sin(yaw),fz=-Math.cos(yaw),rx=Math.cos(yaw),rz=-Math.sin(yaw);
+    const tx=boatState.x+rx*seat.r+fx*seat.f,tz=boatState.z+rz*seat.r+fz*seat.f,a=1-Math.exp(-10*dt);
+    player.pos.x=lerp(player.pos.x,tx,a);player.pos.z=lerp(player.pos.z,tz,a);
+    player.pos.y=lerp(player.pos.y,surfaceY(player.pos.x,player.pos.z)+1.2,1-Math.exp(-6*dt));
+    player.onGround=true;player.vy=0;player.vx=0;player.vz=0;
   }else{
     const sp=((k.ShiftLeft||k.ShiftRight||TJ.sprint)?9:5.5)*(R.st==='fight'?.6:1)*(S.energyT>0?1.4:1);
     const yaw=player.yaw,fx=-Math.sin(yaw),fz=-Math.cos(yaw),rx=Math.cos(yaw),rz=-Math.sin(yaw);
@@ -2026,16 +2043,24 @@ $('shopCard').addEventListener('click',e=>{
 function repairBoatVisual(){if(boat.userData.wreck)boat.userData.wreck.visible=false;stripe.material.color.setHex(0x2fa552);hull.material.color.setHex(0xffffff);boat.rotation.set(0,boatState.yaw,0);}
 function nearBoat(){return Math.hypot(player.pos.x-boatState.x,player.pos.z-boatState.z)<4.5;}
 function tryBoard(){
-  if(NET.boatBy!=null){toast('یکی از دوستات داره با قایق می‌رونه!','bad');return;}
   if(!S.boatRepaired){toast('قایق هنوز خرابه. برو تو فروشگاه تعمیرش کن.','bad');return;}
-  player.onBoat=true;resetRod();S.equip='rod';
-  player.pos.set(boatState.x,surfaceY(boatState.x,boatState.z)+1.2,boatState.z);
-  player.yaw=boatState.yaw;
-  toast(KEY('سوار قایق شدی! با W/S جلو و عقب، با موس بچرخون. نزدیک اسکله E رو بزن تا پیاده شی.','سوار قایق شدی! جوی‌استیک را ببر جلو، نزدیک اسکله دکمه پیاده‌شدن را بزن.'),'good');
+  resetRod();S.equip='rod';
+  const driving=NET.boatBy==null;
+  player.onBoat=true;player.isDriver=driving;
+  if(driving){
+    player.pos.set(boatState.x,surfaceY(boatState.x,boatState.z)+1.2,boatState.z);
+    player.yaw=boatState.yaw;
+    toast(KEY('سوار قایق شدی و راننده‌ای! با W/S جلو و عقب، با موس بچرخون. نزدیک اسکله E رو بزن تا پیاده شی.','سوار قایق شدی و راننده‌ای! جوی‌استیک را ببر جلو، نزدیک اسکله دکمه پیاده‌شدن را بزن.'),'good');
+  }else{
+    player.seat=seatFor(MP.myId);
+    const seat=player.seat,yaw=boatState.yaw,fx=-Math.sin(yaw),fz=-Math.cos(yaw),rx=Math.cos(yaw),rz=-Math.sin(yaw);
+    player.pos.set(boatState.x+rx*seat.r+fx*seat.f,surfaceY(boatState.x,boatState.z)+1.2,boatState.z+rz*seat.r+fz*seat.f);
+    toast('به عنوان مسافر سوار قایق شدی! فقط راننده می‌تونه قایق رو کنترل کنه. می‌تونی با موس دور و برت رو نگاه کنی. نزدیک اسکله E رو بزن تا پیاده شی.','good');
+  }
 }
 function tryDisembark(){
   if(Math.hypot(player.pos.x,player.pos.z)>SHORE+2&&Math.hypot(player.pos.x-ISLE2.x,player.pos.z-ISLE2.z)>SHORE+2){toast('باید نزدیک یه اسکله باشی تا پیاده شی!','bad');return;}
-  player.onBoat=false;const gh=terrainY(player.pos.x,player.pos.z);player.pos.y=gh;player.vy=0;player.vx=0;player.vz=0;
+  player.onBoat=false;player.isDriver=false;player.seat=null;const gh=terrainY(player.pos.x,player.pos.z);player.pos.y=gh;player.vy=0;player.vx=0;player.vz=0;
 }
 function win(bossWin){
   S.won=true;S.shop=false;$('shop').classList.add('hidden');try{document.exitPointerLock();}catch(e){}SFX.win();
@@ -2048,6 +2073,10 @@ function win(bossWin){
 const UNAME_KEY='htfUsername';
 function getUsername(){return localStorage.getItem(UNAME_KEY)||'';}
 function setUsername(v){try{localStorage.setItem(UNAME_KEY,v);}catch(e){}}
+const PID_KEY='htfPid';
+function getPid(){let p;try{p=localStorage.getItem(PID_KEY);}catch(e){}
+  if(!p){p=(self.crypto&&crypto.randomUUID)?crypto.randomUUID():(Date.now().toString(36)+Math.random().toString(36).slice(2));try{localStorage.setItem(PID_KEY,p);}catch(e){}}
+  return p;}
 const NET={n:0,last:{},ghosts:new Map(),applying:false,synced:false,boatBy:null,boatT:null,gs:null,bt:0,gt:0,ft:0,hadFish:false,wasOnBoat:false,fc:0,pending:null,pendT:0,eqKey:'',eqT:0,eqPending:{}};
 const MP={ws:null,room:null,myId:null,max:8,connected:false};
 const remotePlayers=new Map();
@@ -2088,10 +2117,13 @@ function mpConnect(onOpen){
     let m;try{m=JSON.parse(ev.data);}catch(e){return;}
     if(m.type==='hosted'){MP.room=m.code;MP.myId=m.playerId;$('mpStatus').textContent='کد اتاق: '+m.code+' — این کد رو به دوستات بده!';updateMPHud(1,MP.max);beginMPPlay();}
     else if(m.type==='joined'){MP.myId=m.playerId;MP.max=m.max;MP.room=$('mpCode').value.trim().toUpperCase();$('mpStatus').textContent='وارد اتاق شدی، منتظر بقیه...';updateMPHud(m.count,m.max);beginMPPlay();}
-    else if(m.type==='error'){$('mpStatus').textContent=m.reason==='not-found'?'کد اتاق پیدا نشد.':'اتاق پره!';}
-    else if(m.type==='playerJoined'){toast('یه دوست به بازی پیوست! ('+m.count+'/'+m.max+')','good');updateMPHud(m.count,m.max);addRemote(m.playerId,'بازیکن '+(m.playerId+1));if(isGullOwner())setTimeout(netSendSync,700);}
+    else if(m.type==='error'){$('mpStatus').textContent=m.reason==='not-found'?'کد اتاق پیدا نشد.':m.reason==='banned'?('از بازی چندنفره بن شدی.'+(m.message?(' دلیل: '+m.message):'')):'اتاق پره!';}
+    else if(m.type==='kicked'){toast('از بازی چندنفره اخراج شدی'+(m.reason?(': '+m.reason):'')+'.','bad');try{ws.close();}catch(e){}MP.room=null;}
+    else if(m.type==='chatRejected'){toast('پیام شامل کلمات نامناسب بود و ارسال نشد.','bad');}
+    else if(m.type==='chat'){chatReceive(m.u||'ماهیگیر',String(m.m||'').slice(0,200),m.mid,m.from);}
+    else if(m.type==='playerJoined'){toast('یه دوست به بازی پیوست! ('+m.count+'/'+m.max+')','good');updateMPHud(m.count,m.max);addRemote(m.playerId,m.uname||('بازیکن '+(m.playerId+1)));if(isGullOwner())setTimeout(netSendSync,700);}
     else if(m.type==='playerLeft'){toast('یکی از دوستات از بازی رفت.','bad');removeRemote(m.playerId);}
-    else if(m.type==='start'){toast('بازی چندنفره شروع شد! برید بگردید و ماهی بگیرید 🎣','good');m.players.forEach(pid=>{if(pid!==MP.myId)addRemote(pid,'بازیکن '+(pid+1));});}
+    else if(m.type==='start'){toast('بازی چندنفره شروع شد! برید بگردید و ماهی بگیرید 🎣','good');m.players.forEach(pid=>{if(pid!==MP.myId)addRemote(pid,(m.names&&m.names[pid])||('بازیکن '+(pid+1)));});}
     else if(m.type==='state'){const r=remotePlayers.get(m.from);if(r){r.tx=m.x;r.ty=m.y;r.tz=m.z;r.tyaw=m.yaw;}else addRemote(m.from,'بازیکن '+(m.from+1));}
     else if(m.type==='catch'){if(typeof m.name==='string'&&m.name.slice(0,2)==='@@')netRecv(m.name.slice(2));else toast(`${m.name} یک ${m.fish} گرفت! (+${fa(m.value)} $)`,'good');}
     else if(m.type==='net'){netRecv(m.p);}
@@ -2103,13 +2135,13 @@ function beginMPPlay(){
 }
 $('hostBtn').onclick=()=>{
   const uname=($('mpName').value||'ماهیگیر').trim().slice(0,14)||'ماهیگیر';setUsername(uname);
-  $('mpStatus').textContent='در حال اتصال...';mpConnect(()=>mpSend({type:'host',max:8}));
+  $('mpStatus').textContent='در حال اتصال...';mpConnect(()=>mpSend({type:'host',max:8,pid:getPid(),uname}));
 };
 $('joinBtn').onclick=()=>{
   const uname=($('mpName').value||'ماهیگیر').trim().slice(0,14)||'ماهیگیر';setUsername(uname);
   const code=($('mpCode').value||'').trim().toUpperCase();
   if(!code){$('mpStatus').textContent='اول کد اتاق رو وارد کن.';return;}
-  $('mpStatus').textContent='در حال اتصال...';mpConnect(()=>mpSend({type:'join',code}));
+  $('mpStatus').textContent='در حال اتصال...';mpConnect(()=>mpSend({type:'join',code,pid:getPid(),uname}));
 };
 (function initUname(){const u=getUsername();if(u)$('mpName').value=u;})();
 async function submitScore(){
@@ -2539,7 +2571,7 @@ function netRecv(s){
         break;
       case 'brep':if(!S.boatRepaired){S.boatRepaired=true;repairBoatVisual();toast('یکی از دوستات قایق رو تعمیر کرد!','good');}break;
       case 'boat':
-        if(player.onBoat)break;
+        if(player.onBoat&&player.isDriver)break;
         boatState.x=d.x;boatState.z=d.z;boatState.yaw=d.y;NET.boatT={x:d.x,z:d.z,y:d.y};
         if(d.on)NET.boatBy=m.f;else{if(NET.boatBy===m.f)NET.boatBy=null;boat.position.set(d.x,surfaceY(d.x,d.z)+.5,d.z);boat.rotation.set(0,d.y,0);}
         break;
@@ -2553,7 +2585,6 @@ function netRecv(s){
           if(def){S.inv.push({def:def,rare:!!d.r,value:d.v,tricks:d.t||''});SFX.tick();toast(def.name+' توی یخدان رفت.');updateHUD();}}
         break;
       case 'fpno':if(d.to===MP.myId){NET.pending=null;ghostKill(d.n);}break;
-      case 'chat':chatReceive(d.u||'ماهیگیر',String(d.m||'').slice(0,200));break;
       case 'gs':NET.gs=d;break;
       case 'gh':if(isGullOwner())hitGull(d.d,true);break;
       case 'fh':{const f=fishes.find(x=>x.nid===d.n);if(f&&f.state==='alive')hitFish(f,{dmg:d.d,ranged:!!d.r},d.ds||0,d.x,d.z);break;}
@@ -2570,16 +2601,34 @@ function netRecv(s){
     }
   }catch(e){console.warn('net',m.k,e);}
 }
+let _remoteRodBase=null;
+function buildRemoteRodModel(){
+  // Fresh, self-contained rod instance for third-person display on other players.
+  // (rodG itself is the *live* first-person view-model: it's parented to the camera and its
+  // top-level position/rotation are animated every frame for casting/reeling/bob sway. Cloning
+  // that live object could bake in whatever transient FP pose it happened to be in at the moment
+  // the clone was taken, which is what caused the huge/bent "hook" look on other players' rods.
+  // Building an independent copy here guarantees a clean rest pose that's never touched by that
+  // per-frame FP animation.)
+  const g=new THREE.Group();
+  const sh=new THREE.Mesh(new THREE.CylinderGeometry(.008,.02,1.6,36),shaftMat);sh.rotation.x=-Math.PI/2;sh.position.z=-.8;g.add(sh);
+  const rl=new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,.06,36),M(0x999999));rl.rotation.z=Math.PI/2;rl.position.set(0,-.05,-.25);g.add(rl);
+  const gp=new THREE.Mesh(new THREE.CylinderGeometry(.026,.026,.3,36),M(0x222222));gp.rotation.x=-Math.PI/2;gp.position.z=-.1;g.add(gp);
+  rodNew(g,sh,rl,gp);
+  if(g.children.length)g.remove(g.children[g.children.length-1]); // drop the FP-only forearm/sleeve overlay — the remote character already has its own arm
+  g.updateMatrixWorld(true);
+  return g;
+}
 function setRemoteItem(r,d){
   const key=d.e+':'+(d.e==='weapon'?d.w:d.e==='rod'?d.rl:d.di+'r'+d.rr);
   if(r.itemKey===key)return;r.itemKey=key;
   if(r.holder){r.g.remove(r.holder);r.holder=null;}
   let obj=null,fish=false;
-  if(d.e==='rod')obj=rodG.clone(true);
+  if(d.e==='rod'){if(!_remoteRodBase)_remoteRodBase=buildRemoteRodModel();obj=_remoteRodBase.clone(true);}
   else if(d.e==='weapon'&&wModels[d.w])obj=wModels[d.w].clone(true);
   else if(d.e==='fish'&&FISH[d.di]){obj=buildFish(FISH[d.di],!!d.rr).g;fish=true;}
   if(!obj)return;
-  obj.visible=true;obj.position.set(0,0,0);obj.rotation.set(0,0,0);
+  obj.visible=true;obj.position.set(0,0,0);obj.rotation.set(0,0,0);obj.scale.set(1,1,1);
   const holder=new THREE.Group(),pitch=new THREE.Group();holder.add(pitch);pitch.add(obj);
   if(fish){
     const bx=new THREE.Box3().setFromObject(obj),sz=bx.getSize(new THREE.Vector3()),mx=Math.max(sz.x,sz.y,sz.z)||1;
@@ -2608,8 +2657,8 @@ function netTick(dt){
   {const hf=heldFish(),key=S.equip+':'+(S.equip==='weapon'?S.weaponLv:S.equip==='rod'?S.rodLv:(hf?FISH.indexOf(hf.def)+(hf.rare?'r':''):''));
    if(key!==NET.eqKey||NET.eqT<=0){NET.eqKey=key;NET.eqT=2;netSend('eq',{e:S.equip,w:S.weaponLv,rl:S.rodLv,di:hf?FISH.indexOf(hf.def):-1,rr:hf&&hf.rare?1:0});}}
   remotePlayers.forEach((r,id)=>{if(NET.eqPending[id]){setRemoteItem(r,NET.eqPending[id]);delete NET.eqPending[id];}});
-  if(player.onBoat!==NET.wasOnBoat){NET.wasOnBoat=player.onBoat;netSend('boat',{x:boatState.x,z:boatState.z,y:boatState.yaw,on:player.onBoat?1:0});}
-  NET.bt-=dt;if(NET.bt<=0){NET.bt=.1;if(player.onBoat)netSend('boat',{x:+boatState.x.toFixed(2),z:+boatState.z.toFixed(2),y:+boatState.yaw.toFixed(2),on:1});}
+  if(player.isDriver!==NET.wasOnBoat){NET.wasOnBoat=player.isDriver;netSend('boat',{x:boatState.x,z:boatState.z,y:boatState.yaw,on:player.isDriver?1:0});}
+  NET.bt-=dt;if(NET.bt<=0){NET.bt=.1;if(player.isDriver)netSend('boat',{x:+boatState.x.toFixed(2),z:+boatState.z.toFixed(2),y:+boatState.yaw.toFixed(2),on:1});}
   NET.gt-=dt;
   if(NET.gt<=0){NET.gt=.1;if(isGullOwner())netSend('gs',{s:gull.st,x:+gull.pos.x.toFixed(2),y:+gull.pos.y.toFixed(2),z:+gull.pos.z.toFixed(2),r:+gull.g.rotation.y.toFixed(2),hp:gull.hp,cx:gull.cx,cz:gull.cz,a:+gull.ang.toFixed(2),t:+gull.t.toFixed(1)});}
   NET.ft-=dt;
@@ -2788,21 +2837,63 @@ gfxApply();
 /* ================= text chat ================= */
 const CHAT={open:false,unread:0,wasPaused:false,online:false};
 function chatEsc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
-function chatRenderMsg(u,m){
+
+// best-effort client-side profanity filter (the server double-checks authoritatively, so this
+// is just for instant feedback — a modified/other client can't be trusted to filter itself)
+const BAD_ROOTS=["kir","kos","jende","jendeh","kosk","kunn","koon","gooh","goh","madar","pedarsag","kesekesh",
+  "sag","haromzade","lash","zenika","javad","kiri","kosde","kosmagz","kholi",
+  "fuck","shit","bitch","asshole","dick","pussy","cunt","bastard","motherfucker","nigger","nigga",
+  "whore","slut","faggot","retard"];
+function normalizeForFilter(s){
+  return String(s||'').toLowerCase()
+    .replace(/[\u200c\u200b\u200e\u200f\u064b-\u065f\u0670]/g,'')
+    .replace(/[أإآا]/g,'ا').replace(/ي/g,'ی').replace(/ك/g,'ک').replace(/ة/g,'ه').replace(/ؤ/g,'و').replace(/ئ/g,'ی')
+    .replace(/[.\-_*٬،,\s]+/g,'')
+    .replace(/(.)\1{2,}/g,'$1$1');
+}
+function isProfane(text){
+  const n=normalizeForFilter(text);if(!n)return false;
+  for(const root of BAD_ROOTS){if(n.includes(normalizeForFilter(root)))return true;}
+  return false;
+}
+
+function chatRenderMsg(u,m,mid,reportable){
   const box=$('chatMsgs');if(!box)return;const row=document.createElement('div');row.className='chatMsg';
-  row.innerHTML='<b>'+chatEsc(u)+':</b> '+chatEsc(m);
+  row.innerHTML='<b></b> <span class="chatTxt"></span>'+(reportable&&mid?' <button class="chatReportBtn" title="گزارش پیام">🚩</button>':'');
+  row.querySelector('b').textContent=u+':';row.querySelector('.chatTxt').textContent=m;
   box.appendChild(row);while(box.children.length>60)box.removeChild(box.firstChild);
   box.scrollTop=box.scrollHeight;
+  if(reportable&&mid){const btn=row.querySelector('.chatReportBtn');if(btn)btn.addEventListener('click',()=>reportMessage(mid,btn));}
 }
-function chatReceive(u,m){
-  chatRenderMsg(u,m);
-  if(!CHAT.open){CHAT.unread++;const b=$('chatBadge');if(b){b.textContent=fa(Math.min(CHAT.unread,99));b.classList.remove('hidden');}}
+function showChatToast(u,m){
+  const box=$('chatToasts');if(!box)return;
+  const el=document.createElement('div');el.className='glassToast';
+  el.innerHTML='<b></b><span></span>';
+  el.querySelector('b').textContent=u+':';el.querySelector('span').textContent=m;
+  box.appendChild(el);
+  requestAnimationFrame(()=>el.classList.add('show'));
+  setTimeout(()=>{el.classList.remove('show');setTimeout(()=>{if(el.parentNode)el.parentNode.removeChild(el);},260);},4200);
+  while(box.children.length>4)box.removeChild(box.firstChild);
+}
+function reportMessage(mid,btn){
+  if(btn){if(btn.disabled)return;btn.disabled=true;btn.textContent='✅';}
+  mpSend({type:'report',mid:mid});
+  toast('پیام گزارش شد. ممنون از همکاریت!','good');
+}
+function chatReceive(u,m,mid,from){
+  const reportable=(from!==undefined&&from!==null&&from!==MP.myId);
+  chatRenderMsg(u,m,mid,reportable);
+  if(!CHAT.open){
+    CHAT.unread++;const b=$('chatBadge');if(b){b.textContent=fa(Math.min(CHAT.unread,99));b.classList.remove('hidden');}
+    showChatToast(u,m);
+  }
 }
 function sendChat(){
   const inp=$('chatInput');if(!inp)return;const v=inp.value.trim();inp.value='';if(!v)return;
+  if(isProfane(v)){toast('پیام شامل کلمات نامناسب بود و ارسال نشد.','bad');return;}
   const name=getUsername()||'ماهیگیر';
-  chatRenderMsg(name,v);
-  if(inRoom())netSend('chat',{u:name,m:v.slice(0,140)});
+  chatRenderMsg(name,v,null,false);
+  if(inRoom())mpSend({type:'chat',m:v.slice(0,140)});
 }
 function openChat(){
   if(CHAT.open)return;
