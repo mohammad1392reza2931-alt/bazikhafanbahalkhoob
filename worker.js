@@ -96,6 +96,7 @@ export class Dock {
     this.lobbySockets = new Set(); // sockets currently browsing the public-server list (not yet in a room)
     this.banned = new Map(); // pid -> {uname, ip, reason, at}
     this.reports = []; // recent reports, newest first
+    this.heartbeatStarted = false;
     this.state.blockConcurrencyWhile(async () => {
       const b = await this.state.storage.get("banned");
       if (b) this.banned = new Map(Object.entries(b));
@@ -118,11 +119,44 @@ export class Dock {
     const pair = new WebSocketPair();
     const [client, server] = Object.values(pair);
     server._ip = request.headers.get("CF-Connecting-IP") || "";
+    server._awaitingPong = false;
     server.accept();
     server.addEventListener("message", (ev) => this.onMessage(server, ev));
     server.addEventListener("close", () => this.onClose(server));
     server.addEventListener("error", () => this.onClose(server));
+    this.startHeartbeat();
     return new Response(null, { status: 101, webSocket: client });
+  }
+
+  // Mobile browsers/OSes often kill a tab or drop the network without ever sending a proper
+  // WebSocket close frame, so a "close"/"error" event doesn't always fire. Without this, a
+  // zombie connection would keep its room (and its public-server listing) alive forever. This
+  // pings every open socket periodically; any socket that doesn't answer within one interval is
+  // force-closed, which triggers the normal onClose cleanup (removes it from its room, and drops
+  // the room + public listing if that was the last player in it).
+  startHeartbeat() {
+    if (this.heartbeatStarted) return;
+    this.heartbeatStarted = true;
+    setInterval(() => this.sweepDeadSockets(), 20000);
+  }
+
+  allSockets() {
+    const all = new Set();
+    this.rooms.forEach((room) => room.sockets.forEach((sock) => all.add(sock)));
+    this.lobbySockets.forEach((sock) => all.add(sock));
+    this.adminSockets.forEach((sock) => all.add(sock));
+    return all;
+  }
+
+  sweepDeadSockets() {
+    this.allSockets().forEach((sock) => {
+      if (sock._awaitingPong) {
+        try { sock.close(); } catch (e) {}
+      } else {
+        sock._awaitingPong = true;
+        try { sock.send(JSON.stringify({ type: "ping" })); } catch (e) { try { sock.close(); } catch (e2) {} }
+      }
+    });
   }
 
   genCode() {
@@ -175,6 +209,8 @@ export class Dock {
   async onMessage(ws, ev) {
     let msg;
     try { msg = JSON.parse(ev.data); } catch (e) { return; }
+
+    if (msg.type === "pong") { ws._awaitingPong = false; return; }
 
     if (msg.type === "adminAuth") {
       if (this.env.ADMIN_KEY && String(msg.key || "") === this.env.ADMIN_KEY) {
