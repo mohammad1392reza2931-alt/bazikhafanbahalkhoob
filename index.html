@@ -2131,7 +2131,8 @@ function mpConnect(onOpen){
   ws.onerror=()=>{$('mpStatus').textContent='اتصال به سرور چندنفره برقرار نشد. آدرس Worker رو چک کن.';};
   ws.onmessage=ev=>{
     let m;try{m=JSON.parse(ev.data);}catch(e){return;}
-    if(m.type==='hosted'){MP.room=m.code;MP.myId=m.playerId;MP.isHost=true;MP.isPublic=!!m.public;
+    if(m.type==='ping'){mpSend({type:'pong'});}
+    else if(m.type==='hosted'){MP.room=m.code;MP.myId=m.playerId;MP.isHost=true;MP.isPublic=!!m.public;
       $('mpStatus').textContent='کد اتاق: '+m.code+(m.public?' — سرور عمومی «'+m.name+'» — دوستات می‌تونن از لیست هم پیداش کنن!':' — این کد رو به دوستات بده!');
       if(m.public){$('renameRow').classList.remove('hidden');$('mpNewName').value=m.name||'';}
       updateMPHud(1,MP.max);beginMPPlay();}
