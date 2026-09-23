@@ -16,5 +16,11 @@
       "database_name": "how-to-fish-db",
       "database_id": "39b191f5-6f04-40b3-81d2-ecab8d669785"
     }
-  ]
+  ],
+  "vars": {
+    // رمز ورود به پنل گزارشات. حتماً این مقدار رو عوض کن و جایی جز اینجا با کسی به اشتراک نذار.
+    // برای امنیت بیشتر می‌تونی به‌جاش از دستور `npx wrangler secret put ADMIN_KEY` استفاده کنی
+    // و این خط رو کلاً از فایل حذف کنی.
+    "ADMIN_KEY": "7hA780JsVZVzDHuV9tV99FzWUJNO"
+  }
 }
