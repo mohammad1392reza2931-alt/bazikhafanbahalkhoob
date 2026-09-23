@@ -283,7 +283,7 @@ export class Dock {
       ws._playerId = 0;
       this.rooms.set(code, room);
       this.lobbySockets.delete(ws);
-      ws.send(JSON.stringify({ type: "hosted", code, playerId: 0, max, public: isPublic, name }));
+      ws.send(JSON.stringify({ type: "hosted", code, playerId: 0, max, public: isPublic, name, roster: [{ id: 0, uname: ws._uname || "" }] }));
       if (isPublic) this.broadcastPublicList();
       return;
     }
@@ -302,10 +302,13 @@ export class Dock {
       ws._roomCode = code;
       ws._playerId = playerId;
       this.lobbySockets.delete(ws);
-      ws.send(JSON.stringify({ type: "joined", playerId, count: room.sockets.size, max: room.max }));
+      const roster = Array.from(room.sockets.entries()).map(([id, sock]) => ({ id, uname: sock._uname || "" }));
+      ws.send(JSON.stringify({ type: "joined", playerId, count: room.sockets.size, max: room.max, public: room.public, started: room.started, roster }));
       this.broadcastRoom(room, { type: "playerJoined", playerId, count: room.sockets.size, max: room.max, uname: ws._uname }, playerId);
       if (room.public) this.broadcastPublicList();
-      if (!room.started) {
+      // Private rooms still auto-start the moment someone joins. Public rooms wait in a lobby
+      // (roster + kick, visible to everyone in it) until the host sends "startGame" themselves.
+      if (!room.started && !room.public) {
         room.started = true;
         const names = {};
         room.sockets.forEach((sock, id) => { names[id] = sock._uname || ""; });
@@ -318,6 +321,28 @@ export class Dock {
 
     const room = this.rooms.get(ws._roomCode);
     if (!room) return;
+
+    if (msg.type === "startGame") {
+      if (ws._playerId !== 0 || room.started) return;
+      room.started = true;
+      const names = {};
+      room.sockets.forEach((sock, id) => { names[id] = sock._uname || ""; });
+      const ids = Array.from(room.sockets.keys());
+      this.broadcastRoom(room, { type: "start", players: ids, names }, -1);
+      ws.send(JSON.stringify({ type: "start", players: ids, names }));
+      if (room.public) { room.public = false; this.broadcastPublicList(); }
+      return;
+    }
+
+    if (msg.type === "kick") {
+      if (ws._playerId !== 0) return;
+      const targetId = Number(msg.playerId);
+      const target = room.sockets.get(targetId);
+      if (!target || targetId === 0) return;
+      try { target.send(JSON.stringify({ type: "kicked", reason: "میزبان شما را از سرور بیرون انداخت" })); } catch (e) {}
+      try { target.close(); } catch (e) {}
+      return;
+    }
 
     if (msg.type === "renameServer") {
       if (ws._playerId !== 0 || !room.public) return;
