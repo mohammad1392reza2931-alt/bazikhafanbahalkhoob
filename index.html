@@ -520,7 +520,7 @@ function TX(name){
   }
   _tx[name]=t;return t;
 }
-const TXM=n=>TX(n)[0],TXB=n=>TX(n)[1];
+const TXM=n=>{const t=TX(n);return Array.isArray(t)?t[0]:t;},TXB=n=>{const t=TX(n);return Array.isArray(t)?t[1]:null;};
 /* ---------- palms ---------- */
 let _fm=null;
 const frondMat=()=>{if(_fm)return _fm;_fm=new THREE.MeshStandardMaterial({vertexColors:true,side:THREE.DoubleSide,roughness:.55,metalness:.02});
@@ -887,8 +887,8 @@ const remoteNew=SAFE('remote',function(g,hue,shirtMat){
   b.box(.1,.018,.02,0xa04a3a,0,1.6,.29);b.sph(.31,hair,0,1.82,-.05,1,.75,1.05,14);
   b.cyl(.27,.31,.13,shirt,0,1.96,0,0,0,0,18);b.sph(.27,shirt,0,1.96,0,1,.6,1,18);b.box(.3,.03,.28,dark,0,1.92,.34,-.12,0,0);
   const m=b.build(VMAT());m.castShadow=true;g.add(m);
-  const r=new Bld();r.cyl(.02,.028,1.6,0x8a5a2b,0,0,0,0,0,0,6);r.cyl(.03,.03,.28,0xc39a62,0,-.6,0,0,0,0,8);r.sph(.05,0x9aa4ad,.05,-.35,0,1,1,1,8);
-  const rm=r.build(VMAT());rm.position.set(.46,1.3,.62);rm.rotation.x=-1.05;g.add(rm);
+  // (no baked-in backpack rod here anymore — setRemoteItem() already shows a rod in-hand
+  // whenever that player actually has one equipped; this static one was just doubling it up.)
 });
 /* ---------- barrel ---------- */
 const barrelNew=SAFE('barrel',function(x,z){
@@ -1015,12 +1015,12 @@ const hutNew=SAFE('hut',function(hut,head,signM){
   for(let i=0;i<9;i++){const c=[0x3a9a5a,0x4a7fbf,0xc0392b,0xf2c53a,0x8a5fbf][i%5];gl.cyl(.05,.07,.26,c,-2+i*.45,1.6,-1.68,0,0,0,10);gl.cyl(.025,.03,.1,c,-2+i*.45,1.78,-1.68,0,0,0,8);}
   for(let i=0;i<4;i++){v.box(.4,.2,.28,[0x2f7fd0,0xd63c2a,0x3a9a5a,0xf2c53a][i],-1.6+i*.9,2.23,-1.68);m.box(.06,.04,.02,0xcfd6dc,-1.6+i*.9,2.24,-1.53);}
   for(let i=0;i<4;i++){m.cyl(.008,.008,1.1,0x2a2f35,-2.3+i*.12,2.15,-1.3+i*.1,.2,0,0,4);}
-  const tex=TXM('net');const nt=new THREE.MeshStandardMaterial({map:tex,transparent:true,alphaTest:.4,side:THREE.DoubleSide,roughness:1});const net=new THREE.Mesh(new THREE.PlaneGeometry(1.6,1.4),nt);net.position.set(2.32,1.6,-1.0);net.rotation.y=-Math.PI/2;hut.add(net);
+  const tex=TX('net');const nt=new THREE.MeshStandardMaterial({map:tex,transparent:true,alphaTest:.4,side:THREE.DoubleSide,roughness:1});const net=new THREE.Mesh(new THREE.PlaneGeometry(1.6,1.4),nt);net.position.set(2.32,1.6,-1.0);net.rotation.y=-Math.PI/2;hut.add(net);
   for(let i=0;i<7;i++)v.sph(.045,0xfff3d1,2.31,2.28,-1.75+i*.24,1,1,1,6);
   for(let i=0;i<3;i++){v.sph(.17,i%2?0xff3b2f:0xffffff,-2.2+i*.25,2.4,-1.4,1,1.1,1,10);}
   const rk=new Bld();for(let i=0;i<5;i++){rk.cyl(.012,.02,1.7,[0x8a5a2b,0x2f7fd0,0x222,0xffc83a,0x9aa7b3][i],-2.28,1.2,.6+i*.16,0,0,.15,6);m.cyl(.012,.012,.03,0x9aa4ad,-2.22,1.7-.3,.6+i*.16,0,0,0,6);}
   v.add(FIN().fork,0xffffff,0,0,0,0,0,0,.0001,.0001,1,0);
-  const rug=new THREE.Mesh(new THREE.PlaneGeometry(2.6,1.3),new THREE.MeshStandardMaterial({map:TXM('rug'),roughness:1}));rug.rotation.x=-Math.PI/2;rug.position.set(0,.03,2.9);rug.receiveShadow=true;hut.add(rug);
+  const rug=new THREE.Mesh(new THREE.PlaneGeometry(2.6,1.3),new THREE.MeshStandardMaterial({map:TX('rug'),roughness:1}));rug.rotation.x=-Math.PI/2;rug.position.set(0,.03,2.9);rug.receiveShadow=true;hut.add(rug);
   hut.add(p1.build(PMAT()));hut.add(wv.build(PMATV()));hut.add(w.build(WMAT()));hut.add(rf.build(new THREE.MeshStandardMaterial({vertexColors:true,map:shm,bumpMap:shb,bumpScale:.05,roughness:.85})));
   hut.add(aw.build(FABM()));hut.add(m.build(MMAT()));hut.add(v.build(VMAT()));hut.add(rk.build(VMAT()));const gm=gl.build(GMAT());gm.castShadow=false;hut.add(gm);const em=e.build(EMAT());em.castShadow=false;hut.add(em);
   // shopkeeper
@@ -2734,7 +2734,14 @@ function setRemoteItem(r,d){
     obj.scale.multiplyScalar(.7/mx);obj.updateMatrixWorld(true);
     const c=new THREE.Box3().setFromObject(obj).getCenter(new THREE.Vector3());obj.position.sub(c);
     holder.position.set(.3,1.0,.45);holder.rotation.y=-Math.PI/2;
-  }else{holder.position.set(.42,1.1,.15);holder.rotation.y=Math.PI;pitch.rotation.x=.35;}
+  }else{
+    // Point the grip mostly DOWNWARD (with just a little outward/forward lean) instead of trying
+    // to angle it across the body — a small calibration miss on a downward aim still clears the
+    // face by a mile, whereas the old sideways-across-the-chest aim (holder.rotation.y=Math.PI +
+    // pitch.rotation.x=.35) was exactly what ended up spearing the rod through the head/face.
+    holder.position.set(.36,1.12,.1);
+    holder.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,-1),new THREE.Vector3(.3,.6,.75).normalize());
+  }
   r.g.add(holder);r.holder=holder;
 }
 function gullMirror(dt){
@@ -3017,6 +3024,25 @@ $('chatInput').addEventListener('keydown',e=>{
   else if(e.key==='Escape'){e.preventDefault();closeChat();}
 });
 $('chatInput').addEventListener('keyup',e=>e.stopPropagation());
+
+/* ============ background music (plays the 3 tracks back-to-back, forever) ============ */
+const BGM={files:['music-ritmada.mp3','music-uranium.mp3','music-heavenly.mp3'],i:0,fails:0,on:false,a:new Audio()};
+BGM.a.preload='auto';BGM.a.volume=.3;
+function bgmPlay(){try{const p=BGM.a.play();if(p&&p.catch)p.catch(()=>{});}catch(e){}}
+function bgmNext(){BGM.i=(BGM.i+1)%BGM.files.length;BGM.a.src=BGM.files[BGM.i];bgmPlay();}
+BGM.a.addEventListener('ended',()=>{BGM.fails=0;bgmNext();});
+BGM.a.addEventListener('playing',()=>{BGM.fails=0;});
+BGM.a.addEventListener('error',()=>{if(++BGM.fails<BGM.files.length)bgmNext();});
+const BGM_EV=['pointerup','touchend','click','keydown'];
+function bgmKick(){
+  if(BGM.on)return;
+  if(!BGM.a.getAttribute('src'))BGM.a.src=BGM.files[BGM.i];
+  let p;try{p=BGM.a.play();}catch(e){return;}
+  const done=()=>{BGM.on=true;BGM_EV.forEach(t=>document.removeEventListener(t,bgmKick,true));};
+  if(p&&p.then)p.then(done).catch(()=>{});else done();
+}
+BGM_EV.forEach(t=>document.addEventListener(t,bgmKick,true));
+document.addEventListener('visibilitychange',()=>{if(!BGM.on)return;if(document.hidden)BGM.a.pause();else bgmPlay();});
 
 /* ============ main loop ============ */
 const clock=new THREE.Clock();
