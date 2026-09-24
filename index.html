@@ -143,6 +143,15 @@ html,body,canvas#c{touch-action:none;-webkit-touch-callout:none;-webkit-tap-high
 @media (max-height:520px){#gfx .card{padding:10px 16px;line-height:1.5}#gfx .row{padding:3px 0;font-size:13px}.seg button{font-size:13px}}
 #chatBtn{position:absolute;top:calc(10px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:42px;height:42px;border-radius:50%;background:rgba(20,38,46,.62);border:3px solid var(--ink);color:#fff;font-size:19px;line-height:1;display:grid;place-items:center;pointer-events:auto;cursor:pointer;box-shadow:0 3px 0 var(--ink);user-select:none;-webkit-user-select:none;touch-action:manipulation}
 .touch #chatBtn{top:calc(8px + env(safe-area-inset-top));width:38px;height:38px;font-size:17px}
+#sndBtn{position:absolute;top:calc(10px + env(safe-area-inset-top));right:calc(50% + 28px);width:42px;height:42px;border-radius:50%;background:rgba(20,38,46,.62);border:3px solid var(--ink);color:#fff;font-size:19px;line-height:1;display:grid;place-items:center;pointer-events:auto;cursor:pointer;box-shadow:0 3px 0 var(--ink);user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.touch #sndBtn{right:calc(50% + 26px);top:calc(8px + env(safe-area-inset-top));width:38px;height:38px;font-size:17px}
+#snd.overlay{background:rgba(9,54,66,.3)}
+#snd .card{max-width:520px}
+#snd .row{flex-wrap:wrap}
+#snd input[type=range]{width:150px;accent-color:var(--coral);vertical-align:middle}
+#sndTracks{flex-direction:column;flex-wrap:nowrap;max-height:34vh;overflow:auto;padding:2px 2px 6px}
+#sndTracks button{width:100%;text-align:right;padding:3px 12px}
+@media (max-height:520px){#snd .card{padding:10px 16px;line-height:1.5}#snd .row{padding:3px 0;font-size:13px}#sndTracks{max-height:28vh}}
 #chatBadge{position:absolute;top:-6px;left:-6px;background:var(--coral);color:#fff;font-size:10.5px;font-weight:900;border-radius:9px;min-width:17px;height:17px;display:grid;place-items:center;border:2px solid var(--ink);padding:0 3px;line-height:1}
 #chatPanel{position:absolute;top:196px;right:18px;width:236px;max-height:min(240px,40vh);background:rgba(9,54,66,.85);border:3px solid var(--ink);border-radius:12px;pointer-events:auto;display:flex;flex-direction:column;box-shadow:0 4px 0 var(--ink);overflow:hidden;z-index:40}
 .touch #chatPanel{top:calc(150px + env(safe-area-inset-top));right:calc(12px + env(safe-area-inset-right));width:156px;max-height:32vh}
@@ -181,6 +190,7 @@ html,body,canvas#c{touch-action:none;-webkit-touch-callout:none;-webkit-tap-high
   <div id="invbar"></div>
   <div id="gearBtn" title="تنظیمات گرافیک (G)">⚙</div>
   <div id="chatBtn" title="چت (T)">💬<span id="chatBadge" class="hidden">۰</span></div>
+  <div id="sndBtn" title="تنظیمات صدا">🔊</div>
   <div id="chatToasts"></div>
   <div id="chatPanel" class="hidden"><div id="chatMsgs"></div><div id="chatRow"><input id="chatInput" maxlength="140" placeholder="پیام بنویس..."><button id="chatSend">ارسال</button></div></div>
   <div id="mpHud" class="pill stroke hidden" style="top:138px;right:18px;font-size:14px">👥 <b id="mpHudV"></b></div>
@@ -281,6 +291,7 @@ html,body,canvas#c{touch-action:none;-webkit-touch-callout:none;-webkit-tap-high
 </div>
 
 <div id="gfx" class="overlay hidden"><div class="card" id="gfxCard"></div></div>
+<div id="snd" class="overlay hidden"><div class="card" id="sndCard"></div></div>
 <div id="fpsV" class="hidden"></div>
 
 <div id="shop" class="overlay hidden"><div class="card wide" id="shopCard"></div></div>
@@ -1123,8 +1134,12 @@ const LURE_W2=[null,
  [['leviathan',10],['hammer',8],['fireswordfish',18],['greatwhite',26],['seadragon',22],['oldpike',4]]];
 
 /* ============ audio ============ */
+const SND={mus:30,sfx:50};   // music volume % (default 30), game-sound volume % (50 = the original loudness)
+try{const m=localStorage.getItem('htf_mus'),v=localStorage.getItem('htf_sfx');if(m!==null&&!isNaN(+m))SND.mus=Math.max(0,Math.min(100,+m));if(v!==null&&!isNaN(+v))SND.sfx=Math.max(0,Math.min(100,+v));}catch(e){}
+function sndSave(){try{localStorage.setItem('htf_mus',SND.mus);localStorage.setItem('htf_sfx',SND.sfx);}catch(e){}}
+const sfxGain=()=>.45*SND.sfx/50;
 let AC=null,master=null;
-function ac(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();master=AC.createGain();master.gain.value=.45;master.connect(AC.destination);}catch(e){}}
+function ac(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();master=AC.createGain();master.gain.value=sfxGain();master.connect(AC.destination);}catch(e){}}
   if(AC&&AC.state==='suspended')AC.resume();return AC;}
 function tone(f,d,type,v,f2,delay){const a=ac();if(!a)return;const o=a.createOscillator(),g=a.createGain(),t=a.currentTime+(delay||0);
   o.type=type||'sine';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);
@@ -2895,6 +2910,7 @@ function gfxSet(k,v){GQ[k]=v;GQ.preset=gfxDetect();gfxApply();gfxSave();gfxRende
 function openGfx(){
   const g=$('gfx');if(!g||!g.classList.contains('hidden'))return;
   if(CHAT.open)closeChat();
+  if(!$('snd').classList.contains('hidden'))closeSnd();
   GFX.wasPaused=S.paused;
   GFX.gfxOnline=!!(MP.connected&&MP.room);   // online: the world keeps running for everyone, only single-player pauses
   if(S.started&&!S.won&&!S.shop){if(!GFX.gfxOnline)S.paused=true;input.mouse=false;try{document.exitPointerLock();}catch(e){}}
@@ -3004,6 +3020,7 @@ function sendChat(){
 function openChat(){
   if(CHAT.open)return;
   if(!$('gfx').classList.contains('hidden'))closeGfx();
+  if(!$('snd').classList.contains('hidden'))closeSnd();
   CHAT.open=true;CHAT.wasPaused=S.paused;CHAT.online=!!(MP.connected&&MP.room);
   if(S.started&&!S.won&&!S.shop){if(!CHAT.online)S.paused=true;input.mouse=false;for(const k in keys)keys[k]=false;try{document.exitPointerLock();}catch(e){}}
   CHAT.unread=0;const b=$('chatBadge');if(b)b.classList.add('hidden');
@@ -3025,24 +3042,64 @@ $('chatInput').addEventListener('keydown',e=>{
 });
 $('chatInput').addEventListener('keyup',e=>e.stopPropagation());
 
-/* ============ background music (plays the 3 tracks back-to-back, forever) ============ */
-const BGM={files:['music-ritmada.mp3','music-uranium.mp3','music-heavenly.mp3'],i:0,fails:0,on:false,a:new Audio()};
-BGM.a.preload='auto';BGM.a.volume=.3;
-function bgmPlay(){try{const p=BGM.a.play();if(p&&p.catch)p.catch(()=>{});}catch(e){}}
-function bgmNext(){BGM.i=(BGM.i+1)%BGM.files.length;BGM.a.src=BGM.files[BGM.i];bgmPlay();}
-BGM.a.addEventListener('ended',()=>{BGM.fails=0;bgmNext();});
-BGM.a.addEventListener('playing',()=>{BGM.fails=0;});
-BGM.a.addEventListener('error',()=>{if(++BGM.fails<BGM.files.length)bgmNext();});
+/* ============ background music + sound settings ============ */
+const BGM={tracks:[['music-ritmada.mp3','Montagem Ritmada'],['music-uranium.mp3','Montagem Uranium'],['music-heavenly.mp3','Heavenly Jumpstyle'],['music-vai.mp3','Vai Do Trair'],['music-comanda.mp3','Montagem Comanda'],['music-supersonic.mp3','Supersonic Funk'],['music-tomada.mp3','Montagem Tomada 2']],i:0,fails:0,on:false,a:new Audio()};
+BGM.a.preload='auto';BGM.a.volume=SND.mus/100;
 const BGM_EV=['pointerup','touchend','click','keydown'];
-function bgmKick(){
-  if(BGM.on)return;
-  if(!BGM.a.getAttribute('src'))BGM.a.src=BGM.files[BGM.i];
-  let p;try{p=BGM.a.play();}catch(e){return;}
-  const done=()=>{BGM.on=true;BGM_EV.forEach(t=>document.removeEventListener(t,bgmKick,true));};
-  if(p&&p.then)p.then(done).catch(()=>{});else done();
-}
+function bgmOK(){BGM.on=true;BGM_EV.forEach(t=>document.removeEventListener(t,bgmKick,true));}
+function bgmPlay(){try{const p=BGM.a.play();if(p&&p.then)p.then(bgmOK).catch(()=>{});else bgmOK();}catch(e){}}
+function bgmMark(){document.querySelectorAll('#sndTracks button').forEach((b,k)=>{b.classList.toggle('on',k===BGM.i);b.textContent=(k===BGM.i?'▶ ':'')+BGM.tracks[k][1];});}
+function bgmGo(n){const L=BGM.tracks.length;BGM.i=((n%L)+L)%L;BGM.a.src=BGM.tracks[BGM.i][0];bgmPlay();bgmMark();}
+function bgmKick(){if(BGM.on)return;if(!BGM.a.getAttribute('src'))BGM.a.src=BGM.tracks[BGM.i][0];bgmPlay();}
+BGM.a.addEventListener('ended',()=>{BGM.fails=0;bgmGo(BGM.i+1);});
+BGM.a.addEventListener('playing',()=>{BGM.fails=0;});
+BGM.a.addEventListener('error',()=>{if(++BGM.fails<BGM.tracks.length)bgmGo(BGM.i+1);});
 BGM_EV.forEach(t=>document.addEventListener(t,bgmKick,true));
 document.addEventListener('visibilitychange',()=>{if(!BGM.on)return;if(document.hidden)BGM.a.pause();else bgmPlay();});
+
+const SNDUI={};
+function sndApply(){BGM.a.volume=SND.mus/100;if(master)master.gain.value=sfxGain();}
+function sndRender(){
+  $('sndCard').innerHTML=
+   '<h2>🔊 تنظیمات صدا</h2>'+
+   '<div class="row"><span>صدای بازی<small>افکت‌ها و صداهای بازی</small></span><span><input type="range" id="sndSfx" min="0" max="100" step="5" value="'+SND.sfx+'"> <b id="sndSfxV">'+fa(SND.sfx)+'٪</b></span></div>'+
+   '<div class="row"><span>صدای آهنگ</span><span><input type="range" id="sndMus" min="0" max="100" step="5" value="'+SND.mus+'"> <b id="sndMusV">'+fa(SND.mus)+'٪</b></span></div>'+
+   '<div class="seg" style="margin:10px 0 6px"><button id="sndPrev">⏮ قبلی</button><button id="sndNext">بعدی ⏭</button></div>'+
+   '<div class="seg" id="sndTracks">'+BGM.tracks.map((t,k)=>'<button data-t="'+k+'">'+t[1]+'</button>').join('')+'</div>'+
+   '<div class="center" style="margin-top:12px"><button class="btn teal" id="sndClose">بستن</button></div>';
+  bgmMark();
+}
+function openSnd(){
+  const g=$('snd');if(!g.classList.contains('hidden'))return;
+  if(CHAT.open)closeChat();
+  if(!$('gfx').classList.contains('hidden'))closeGfx();
+  SNDUI.wasPaused=S.paused;
+  SNDUI.online=!!(MP.connected&&MP.room);GFX.gfxOnline=SNDUI.online;
+  if(S.started&&!S.won&&!S.shop){if(!SNDUI.online)S.paused=true;input.mouse=false;try{document.exitPointerLock();}catch(e){}}
+  sndRender();g.classList.remove('hidden');
+}
+function closeSnd(){
+  $('snd').classList.add('hidden');
+  const on=SNDUI.online;SNDUI.online=false;GFX.gfxOnline=false;
+  if(S.started&&!S.won&&!S.shop&&!SNDUI.wasPaused){if(!on)S.paused=false;$('pause').classList.add('hidden');requestLock();}
+}
+$('sndCard').addEventListener('input',e=>{
+  const id=e.target.id;
+  if(id==='sndSfx'){SND.sfx=+e.target.value;$('sndSfxV').textContent=fa(SND.sfx)+'٪';}
+  else if(id==='sndMus'){SND.mus=+e.target.value;$('sndMusV').textContent=fa(SND.mus)+'٪';}
+  else return;
+  sndApply();sndSave();
+});
+$('sndCard').addEventListener('change',e=>{if(e.target.id==='sndSfx'){try{ac();tone(660,.12,'triangle',.18,880);}catch(x){}}});
+$('sndCard').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.t!==undefined)bgmGo(+b.dataset.t);
+  else if(b.id==='sndPrev')bgmGo(BGM.i-1);
+  else if(b.id==='sndNext')bgmGo(BGM.i+1);
+  else if(b.id==='sndClose')closeSnd();
+});
+$('sndBtn').addEventListener('click',()=>{if($('snd').classList.contains('hidden'))openSnd();else closeSnd();});
+document.addEventListener('keydown',e=>{if(e.code==='Escape'&&!$('snd').classList.contains('hidden'))closeSnd();});
 
 /* ============ main loop ============ */
 const clock=new THREE.Clock();
